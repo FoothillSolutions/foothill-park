@@ -1,7 +1,12 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { theme } from '../constants/theme';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen() {
+  const { authState, signIn, request } = useAuth();
+
+  const isLoading = authState.status === 'loading' || !request;
+
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
@@ -10,8 +15,16 @@ export default function LoginScreen() {
       <Text style={styles.title}>Foothill Park</Text>
       <Text style={styles.subtitle}>Internal Parking Resolution</Text>
 
-      <TouchableOpacity style={styles.button} onPress={() => {}}>
-        <Text style={styles.buttonText}>Sign in with Microsoft</Text>
+      <TouchableOpacity
+        style={[styles.button, isLoading && styles.buttonDisabled]}
+        onPress={signIn}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator color={theme.colors.white} />
+        ) : (
+          <Text style={styles.buttonText}>Sign in with Microsoft</Text>
+        )}
       </TouchableOpacity>
 
       <Text style={styles.footer}>Foothill Technology Solutions</Text>
@@ -56,6 +69,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: '100%',
     alignItems: 'center',
+    height: 54,
+    justifyContent: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
     color: theme.colors.white,
