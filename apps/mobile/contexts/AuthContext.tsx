@@ -7,16 +7,18 @@ import {
   clearSession,
   UserInfo,
 } from '../services/auth';
+import { api } from '../services/api';
 
 export type AuthState =
   | { status: 'loading' }
   | { status: 'unauthenticated' }
-  | { status: 'authenticated'; user: UserInfo; accessToken: string };
+  | { status: 'authenticated'; user: UserInfo; accessToken: string; hasPlate: boolean };
 
 interface AuthContextValue {
   authState: AuthState;
   signIn: () => void;
   signOut: () => Promise<void>;
+  setHasPlate: (value: boolean) => void;
   request: ReturnType<typeof useAuthRequest>[0];
 }
 
@@ -31,40 +33,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [request, response, promptAsync] = useAuthRequest(redirectUri);
 
+  async function hydrateSession() {
+    const session = await getStoredSession();
+    if (!session) {
+      setAuthState({ status: 'unauthenticated' });
+      return;
+    }
+    // Fetch hasPlate from the API; default to false if API is unreachable (server not up yet)
+    let hasPlate = false;
+    try {
+      const me = await api.me();
+      hasPlate = me.hasPlate;
+    } catch {
+      console.warn('[Auth] Could not reach API for hasPlate check — defaulting to false');
+    }
+    setAuthState({ status: 'authenticated', user: session.user, accessToken: session.accessToken, hasPlate });
+  }
+
   // Restore session on mount
-  useEffect(() => {
-    getStoredSession().then((session) => {
-      if (session) {
-        setAuthState({ status: 'authenticated', user: session.user, accessToken: session.accessToken });
-      } else {
-        setAuthState({ status: 'unauthenticated' });
-      }
-    });
-  }, []);
+  useEffect(() => { hydrateSession(); }, []);
 
   // Handle OAuth callback
   useEffect(() => {
-    console.log('[Auth] response type:', response?.type ?? 'null');
-    if (response?.type === 'success') {
-      console.log('[Auth] code verifier present:', !!request?.codeVerifier);
-      console.log('[Auth] code present:', !!response.params?.code);
-    }
-
     if (response?.type === 'success' && request?.codeVerifier) {
       const { code } = response.params;
-      console.log('[Auth] Starting token exchange...');
       exchangeCodeForTokens(code, request.codeVerifier, redirectUri)
-        .then((user) => {
-          console.log('[Auth] Token exchange success, user:', user.displayName);
-          getStoredSession().then((session) => {
-            console.log('[Auth] Stored session found:', !!session);
-            if (session) {
-              setAuthState({ status: 'authenticated', user, accessToken: session.accessToken });
-              console.log('[Auth] State set to authenticated');
-            } else {
-              console.warn('[Auth] No session found after token exchange');
-            }
-          });
+        .then(async (user) => {
+          const session = await getStoredSession();
+          if (!session) return;
+          let hasPlate = false;
+          try {
+            const me = await api.me();
+            hasPlate = me.hasPlate;
+          } catch {
+            console.warn('[Auth] Could not reach API for hasPlate check');
+          }
+          setAuthState({ status: 'authenticated', user, accessToken: session.accessToken, hasPlate });
         })
         .catch((err) => {
           console.error('[Auth] Token exchange failed:', err);
@@ -83,8 +87,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthState({ status: 'unauthenticated' });
   }, []);
 
+  const setHasPlate = useCallback((value: boolean) => {
+    setAuthState((prev) =>
+      prev.status === 'authenticated' ? { ...prev, hasPlate: value } : prev
+    );
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ authState, signIn, signOut, request }}>
+    <AuthContext.Provider value={{ authState, signIn, signOut, setHasPlate, request }}>
       {children}
     </AuthContext.Provider>
   );

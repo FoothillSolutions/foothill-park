@@ -11,22 +11,23 @@ function AuthGate() {
   const segments = useSegments();
 
   useEffect(() => {
-    console.log('[AuthGate] status:', authState.status, '| segments:', JSON.stringify(segments));
     if (authState.status === 'loading') return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    console.log('[AuthGate] inAuthGroup:', inAuthGroup);
+    const inOnboarding = segments[0] === 'onboarding';
 
-    if (authState.status === 'unauthenticated' && inAuthGroup) {
-      console.log('[AuthGate] → /login');
-      router.replace('/login');
-    } else if (authState.status === 'authenticated' && !inAuthGroup) {
-      console.log('[AuthGate] → /(auth)/scan');
-      router.replace('/(auth)/scan');
-    } else {
-      console.log('[AuthGate] No navigation needed');
+    if (authState.status === 'unauthenticated') {
+      if (inAuthGroup) router.replace('/login');
+      return;
     }
-  }, [authState.status, segments]);
+
+    // Authenticated from here
+    if (!authState.hasPlate && !inOnboarding) {
+      router.replace('/onboarding');
+    } else if (authState.hasPlate && !inAuthGroup) {
+      router.replace('/(auth)/scan');
+    }
+  }, [authState, segments]);
 
   return null;
 }
