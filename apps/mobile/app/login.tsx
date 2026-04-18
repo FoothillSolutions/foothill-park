@@ -1,11 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { theme } from '../constants/theme';
 
 export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        <Text style={styles.logo}>FP</Text>
+        <Image source={require('../assets/logo.png')} style={styles.logo} resizeMode="contain" />
       </View>
       <Text style={styles.title}>Foothill Park</Text>
       <Text style={styles.subtitle}>Internal Parking Resolution</Text>
@@ -22,34 +22,31 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.dark,
+    backgroundColor: theme.colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: theme.colors.primary,
+    width: 220,
+    height: 100,
+    marginBottom: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
   },
   logo: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: theme.colors.white,
+    width: 220,
+    height: 100,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: theme.colors.white,
+    color: theme.colors.dark,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: theme.colors.accent,
+    color: theme.colors.primary,
     marginBottom: 48,
   },
   button: {
@@ -68,8 +65,8 @@ const styles = StyleSheet.create({
   footer: {
     position: 'absolute',
     bottom: 40,
-    color: theme.colors.accent,
+    color: theme.colors.dark,
     fontSize: 13,
-    opacity: 0.7,
+    opacity: 0.5,
   },
 });

@@ -6,6 +6,9 @@
     "apps/mobile",
     "apps/api"
   ],
+  "overrides": {
+    "react": "19.1.0"
+  },
   "scripts": {
     "mobile": "npm run start --workspace=apps/mobile",
     "api": "npm run dev --workspace=apps/api",
