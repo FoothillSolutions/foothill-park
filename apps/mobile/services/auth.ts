@@ -6,7 +6,8 @@ import { AUTH_CONFIG } from '../constants/auth';
 WebBrowser.maybeCompleteAuthSession();
 
 const STORE_KEYS = {
-  accessToken: 'fp_access_token',
+  accessToken: 'fp_access_token',   // Microsoft Graph token (future use)
+  idToken: 'fp_id_token',           // sent to our own API — audience = clientId
   refreshToken: 'fp_refresh_token',
   expiresAt: 'fp_token_expires_at',
   userInfo: 'fp_user_info',
@@ -63,13 +64,12 @@ export async function exchangeCodeForTokens(
 
   const expiresAt = Date.now() + tokens.expires_in * 1000;
   await SecureStore.setItemAsync(STORE_KEYS.accessToken, tokens.access_token);
+  await SecureStore.setItemAsync(STORE_KEYS.idToken, tokens.id_token);
   await SecureStore.setItemAsync(STORE_KEYS.expiresAt, String(expiresAt));
   if (tokens.refresh_token) {
     await SecureStore.setItemAsync(STORE_KEYS.refreshToken, tokens.refresh_token);
   }
 
-  // Decode the id_token (JWT) to extract user info — no signature verification needed here
-  // because the token came directly from Microsoft over HTTPS
   const userInfo = parseIdToken(tokens.id_token);
   await SecureStore.setItemAsync(STORE_KEYS.userInfo, JSON.stringify(userInfo));
 
@@ -78,19 +78,19 @@ export async function exchangeCodeForTokens(
 
 export async function getStoredSession(): Promise<{ accessToken: string; user: UserInfo } | null> {
   try {
-    const [accessToken, expiresAtStr, userInfoStr] = await Promise.all([
-      SecureStore.getItemAsync(STORE_KEYS.accessToken),
+    const [idToken, expiresAtStr, userInfoStr] = await Promise.all([
+      SecureStore.getItemAsync(STORE_KEYS.idToken),
       SecureStore.getItemAsync(STORE_KEYS.expiresAt),
       SecureStore.getItemAsync(STORE_KEYS.userInfo),
     ]);
 
-    if (!accessToken || !expiresAtStr || !userInfoStr) return null;
+    if (!idToken || !expiresAtStr || !userInfoStr) return null;
 
     const expiresAt = parseInt(expiresAtStr, 10);
-    // Treat token as expired 60s early to avoid edge cases
     if (Date.now() > expiresAt - 60_000) return null;
 
-    return { accessToken, user: JSON.parse(userInfoStr) };
+    // accessToken here is the id_token — it's what our API validates
+    return { accessToken: idToken, user: JSON.parse(userInfoStr) };
   } catch {
     return null;
   }
