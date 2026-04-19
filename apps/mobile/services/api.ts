@@ -1,6 +1,8 @@
+import { Platform } from 'react-native';
 import { getStoredSession } from './auth';
 
-const BASE_URL = __DEV__ ? 'http://localhost:3000' : 'https://api.foothillpark.internal';
+const DEV_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const BASE_URL = __DEV__ ? `http://${DEV_HOST}:3000` : 'https://api.foothillpark.internal';
 
 async function authHeaders(): Promise<Record<string, string>> {
   const session = await getStoredSession();

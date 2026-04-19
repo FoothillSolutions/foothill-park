@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/authenticate';
+import { requirePlate } from '../middleware/requirePlate';
 import { findOrCreateEmployee } from '../services/employeeService';
 import { registerPlate, getMyPlates, lookupPlate } from '../services/plateService';
 import { db } from '../db/connection';
@@ -49,7 +50,7 @@ router.post('/register', authenticate, async (req, res) => {
 });
 
 // POST /api/plates/lookup
-router.post('/lookup', authenticate, async (req, res) => {
+router.post('/lookup', authenticate, requirePlate, async (req, res) => {
   const { plateNumber } = req.body;
   if (!plateNumber || typeof plateNumber !== 'string') {
     res.status(400).json({ error: 'plateNumber is required' });
@@ -61,18 +62,24 @@ router.post('/lookup', authenticate, async (req, res) => {
       req.user!.entraId, req.user!.displayName, req.user!.email
     );
 
+    // Rate limit: 10 lookups per hour per user
+    const rateCheck = await db.query(
+      `SELECT COUNT(*) AS count FROM audit_logs
+       WHERE actor_id = $1 AND action = 'PLATE_LOOKUP'
+         AND created_at > NOW() - INTERVAL '1 hour'`,
+      [actor.id]
+    );
+    if (parseInt(rateCheck.rows[0].count, 10) >= 10) {
+      res.status(429).json({ error: 'Rate limit exceeded. Try again in an hour.' });
+      return;
+    }
+
     const result = await lookupPlate(plateNumber);
 
-    // Always audit the lookup
     await db.query(
       `INSERT INTO audit_logs (actor_id, action, target_plate, metadata, ip_address)
        VALUES ($1, 'PLATE_LOOKUP', $2, $3, $4)`,
-      [
-        actor.id,
-        plateNumber.toUpperCase(),
-        JSON.stringify({ found: result.found }),
-        req.ip,
-      ]
+      [actor.id, plateNumber.toUpperCase(), JSON.stringify({ found: result.found }), req.ip]
     );
 
     res.json(result);

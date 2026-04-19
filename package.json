@@ -15,5 +15,8 @@
     "build:api": "npm run build --workspace=apps/api",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "dependencies": {
+    "expo-dev-client": "~6.0.20"
   }
 }

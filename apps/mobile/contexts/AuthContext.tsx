@@ -1,13 +1,32 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { makeRedirectUri } from 'expo-auth-session';
+import * as SecureStore from 'expo-secure-store';
+import * as WebBrowser from 'expo-web-browser';
+import * as Crypto from 'expo-crypto';
+import { AUTH_CONFIG } from '../constants/auth';
 import {
-  useAuthRequest,
-  exchangeCodeForTokens,
   getStoredSession,
   clearSession,
   UserInfo,
 } from '../services/auth';
 import { api } from '../services/api';
+
+WebBrowser.maybeCompleteAuthSession();
+
+const REDIRECT_URI = 'foothill-park://auth';
+const AUTH_ENDPOINT = `https://login.microsoftonline.com/${AUTH_CONFIG.tenantId}/oauth2/v2.0/authorize`;
+
+async function buildPKCE() {
+  const bytes = await Crypto.getRandomBytesAsync(32);
+  const verifier = btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  const hash = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    verifier,
+    { encoding: Crypto.CryptoEncoding.BASE64 }
+  );
+  const challenge = hash.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  return { verifier, challenge };
+}
 
 export type AuthState =
   | { status: 'loading' }
@@ -16,10 +35,10 @@ export type AuthState =
 
 interface AuthContextValue {
   authState: AuthState;
-  signIn: () => void;
+  signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   setHasPlate: (value: boolean) => void;
-  request: ReturnType<typeof useAuthRequest>[0];
+  completeSignIn: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -27,60 +46,32 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
 
-  const redirectUri = __DEV__
-    ? 'exp://localhost:8081/--/auth'
-    : makeRedirectUri({ scheme: 'foothill-park', path: 'auth' });
-
-  const [request, response, promptAsync] = useAuthRequest(redirectUri);
-
   async function hydrateSession() {
     const session = await getStoredSession();
-    if (!session) {
-      setAuthState({ status: 'unauthenticated' });
-      return;
-    }
-    // Fetch hasPlate from the API; default to false if API is unreachable (server not up yet)
+    if (!session) { setAuthState({ status: 'unauthenticated' }); return; }
     let hasPlate = false;
-    try {
-      const me = await api.me();
-      hasPlate = me.hasPlate;
-    } catch {
-      console.warn('[Auth] Could not reach API for hasPlate check — defaulting to false');
-    }
+    try { const me = await api.me(); hasPlate = me.hasPlate; } catch {}
     setAuthState({ status: 'authenticated', user: session.user, accessToken: session.accessToken, hasPlate });
   }
 
-  // Restore session on mount
   useEffect(() => { hydrateSession(); }, []);
 
-  // Handle OAuth callback
-  useEffect(() => {
-    if (response?.type === 'success' && request?.codeVerifier) {
-      const { code } = response.params;
-      exchangeCodeForTokens(code, request.codeVerifier, redirectUri)
-        .then(async (user) => {
-          const session = await getStoredSession();
-          if (!session) return;
-          let hasPlate = false;
-          try {
-            const me = await api.me();
-            hasPlate = me.hasPlate;
-          } catch {
-            console.warn('[Auth] Could not reach API for hasPlate check');
-          }
-          setAuthState({ status: 'authenticated', user, accessToken: session.accessToken, hasPlate });
-        })
-        .catch((err) => {
-          console.error('[Auth] Token exchange failed:', err);
-          setAuthState({ status: 'unauthenticated' });
-        });
-    } else if (response?.type === 'error') {
-      console.error('[Auth] OAuth error:', response.error);
-      setAuthState({ status: 'unauthenticated' });
-    }
-  }, [response]);
+  const signIn = useCallback(async () => {
+    const { verifier, challenge } = await buildPKCE();
+    await SecureStore.setItemAsync('fp_pkce_verifier', verifier);
 
-  const signIn = useCallback(() => promptAsync(), [promptAsync]);
+    const params = new URLSearchParams({
+      client_id: AUTH_CONFIG.clientId,
+      response_type: 'code',
+      redirect_uri: REDIRECT_URI,
+      scope: AUTH_CONFIG.scopes.join(' '),
+      code_challenge: challenge,
+      code_challenge_method: 'S256',
+      response_mode: 'query',
+    });
+
+    await WebBrowser.openAuthSessionAsync(`${AUTH_ENDPOINT}?${params}`, REDIRECT_URI);
+  }, []);
 
   const signOut = useCallback(async () => {
     await clearSession();
@@ -93,8 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const completeSignIn = useCallback(async () => {
+    const session = await getStoredSession();
+    if (!session) return;
+    let hasPlate = false;
+    try { const me = await api.me(); hasPlate = me.hasPlate; } catch {}
+    setAuthState({ status: 'authenticated', user: session.user, accessToken: session.accessToken, hasPlate });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ authState, signIn, signOut, setHasPlate, request }}>
+    <AuthContext.Provider value={{ authState, signIn, signOut, setHasPlate, completeSignIn }}>
       {children}
     </AuthContext.Provider>
   );

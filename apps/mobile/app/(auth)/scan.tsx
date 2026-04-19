@@ -4,8 +4,10 @@ import {
   ActivityIndicator, Linking, KeyboardAvoidingView,
   Platform, ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 import { PlateInput } from '../../components/PlateInput';
+import CameraScanner from '../../components/CameraScanner';
 import { api } from '../../services/api';
 import { isValidPlate, normalizePlate, formatPlate } from '../../utils/plateParser';
 
@@ -18,14 +20,15 @@ export default function ScanScreen() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState('');
+  const [cameraOpen, setCameraOpen] = useState(false);
 
-  async function handleLookup() {
-    if (!isValidPlate(plate)) return;
+  async function handleLookup(rawPlate = plate) {
+    if (!isValidPlate(rawPlate)) return;
     setLoading(true);
     setResult(null);
     setError('');
     try {
-      const data = await api.lookupPlate(normalizePlate(plate));
+      const data = await api.lookupPlate(normalizePlate(rawPlate));
       setResult(data as Result);
     } catch (err: any) {
       setError(err.message ?? 'Lookup failed. Please try again.');
@@ -34,10 +37,25 @@ export default function ScanScreen() {
     }
   }
 
+  function handlePlateDetected(detected: string) {
+    setCameraOpen(false);
+    setPlate(detected);
+    handleLookup(detected);
+  }
+
   function handleReset() {
     setPlate('');
     setResult(null);
     setError('');
+  }
+
+  if (cameraOpen) {
+    return (
+      <CameraScanner
+        onPlateDetected={handlePlateDetected}
+        onClose={() => setCameraOpen(false)}
+      />
+    );
   }
 
   return (
@@ -47,11 +65,22 @@ export default function ScanScreen() {
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
-        {/* Entry section */}
         {!result && (
           <>
             <Text style={styles.heading}>Which car is blocking you?</Text>
-            <Text style={styles.sub}>Enter the licence plate number to find the owner.</Text>
+            <Text style={styles.sub}>Scan the licence plate or enter it manually.</Text>
+
+            {/* Camera scan button */}
+            <TouchableOpacity style={styles.scanBtn} onPress={() => setCameraOpen(true)}>
+              <Ionicons name="camera" size={22} color={theme.colors.white} />
+              <Text style={styles.scanBtnText}>Scan Plate with Camera</Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or enter manually</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
             <View style={styles.inputRow}>
               <PlateInput value={plate} onChange={setPlate} error={error} />
@@ -59,19 +88,16 @@ export default function ScanScreen() {
 
             <TouchableOpacity
               style={[styles.button, (!isValidPlate(plate) || loading) && styles.buttonDisabled]}
-              onPress={handleLookup}
+              onPress={() => handleLookup()}
               disabled={!isValidPlate(plate) || loading}
             >
               {loading
                 ? <ActivityIndicator color={theme.colors.white} />
                 : <Text style={styles.buttonText}>Look Up Owner</Text>}
             </TouchableOpacity>
-
-            <Text style={styles.hint}>Camera scanning coming soon — enter manually for now.</Text>
           </>
         )}
 
-        {/* Result section */}
         {result && (
           <View style={styles.resultCard}>
             <Text style={styles.plateDisplay}>{formatPlate(normalizePlate(plate))}</Text>
@@ -88,7 +114,7 @@ export default function ScanScreen() {
                     style={styles.callButton}
                     onPress={() => Linking.openURL(`tel:${result.owner.phone}`)}
                   >
-                    <Text style={styles.callIcon}>📞</Text>
+                    <Ionicons name="call" size={20} color={theme.colors.white} />
                     <Text style={styles.callText}>Call {result.owner.displayName.split(' ')[0]}</Text>
                   </TouchableOpacity>
                 ) : (
@@ -99,7 +125,7 @@ export default function ScanScreen() {
               </>
             ) : (
               <View style={styles.notFound}>
-                <Text style={styles.notFoundIcon}>🚫</Text>
+                <Ionicons name="ban" size={48} color={theme.colors.error} />
                 <Text style={styles.notFoundText}>No employee found for this plate.</Text>
                 <Text style={styles.notFoundSub}>The car may belong to a visitor.</Text>
               </View>
@@ -119,20 +145,28 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: theme.colors.white },
   container: { flexGrow: 1, padding: 24, justifyContent: 'center' },
-  heading: {
-    fontSize: 22, fontWeight: '700', color: theme.colors.dark, marginBottom: 8,
-  },
+  heading: { fontSize: 22, fontWeight: '700', color: theme.colors.dark, marginBottom: 8 },
   sub: { fontSize: 15, color: theme.colors.textSecondary, marginBottom: 24, lineHeight: 22 },
+
+  scanBtn: {
+    backgroundColor: theme.colors.primary, paddingVertical: 16,
+    borderRadius: theme.radius.md, flexDirection: 'row',
+    alignItems: 'center', justifyContent: 'center', gap: 10, height: 54,
+  },
+  scanBtnText: { color: theme.colors.white, fontSize: 16, fontWeight: '600' },
+
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 20 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: theme.colors.border },
+  dividerText: { fontSize: 13, color: theme.colors.textSecondary },
+
   inputRow: { marginBottom: 16 },
   button: {
-    backgroundColor: theme.colors.primary, paddingVertical: 16,
+    backgroundColor: theme.colors.accent, paddingVertical: 16,
     borderRadius: theme.radius.md, alignItems: 'center', height: 54, justifyContent: 'center',
   },
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: theme.colors.white, fontSize: 16, fontWeight: '600' },
-  hint: { marginTop: 16, fontSize: 13, color: theme.colors.dark, opacity: 0.4, textAlign: 'center' },
 
-  // Result card
   resultCard: {
     backgroundColor: theme.colors.surface, borderRadius: theme.radius.lg,
     padding: 28, alignItems: 'center', gap: 8,
@@ -148,7 +182,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary, paddingVertical: 16, paddingHorizontal: 32,
     borderRadius: theme.radius.md, marginTop: 16, width: '100%', justifyContent: 'center',
   },
-  callIcon: { fontSize: 20 },
   callText: { color: theme.colors.white, fontSize: 17, fontWeight: '700' },
   noPhone: {
     backgroundColor: theme.colors.border, borderRadius: theme.radius.md,
@@ -156,7 +189,6 @@ const styles = StyleSheet.create({
   },
   noPhoneText: { color: theme.colors.dark, opacity: 0.6 },
   notFound: { alignItems: 'center', gap: 8, paddingVertical: 16 },
-  notFoundIcon: { fontSize: 40 },
   notFoundText: { fontSize: 17, fontWeight: '600', color: theme.colors.dark },
   notFoundSub: { fontSize: 14, color: theme.colors.textSecondary },
   resetButton: { marginTop: 24, paddingVertical: 12 },

@@ -3,9 +3,9 @@ import { theme } from '../constants/theme';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginScreen() {
-  const { authState, signIn, request } = useAuth();
+  const { authState, signIn } = useAuth();
 
-  const isLoading = authState.status === 'loading' || !request;
+  const isLoading = authState.status === 'loading';
 
   return (
     <View style={styles.container}>

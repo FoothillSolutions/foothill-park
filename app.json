@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "929252d4-3a69-4848-b76e-a75ead5adf03"
+      }
+    },
+    "android": {
+      "package": "com.foothilltech.foothillpark"
+    }
+  }
+}

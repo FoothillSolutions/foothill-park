@@ -7,6 +7,7 @@ import healthRouter from './routes/health';
 import meRouter from './routes/me';
 import platesRouter from './routes/plates';
 import employeesRouter from './routes/employees';
+import adminRouter from './routes/admin';
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use('/api/health', healthRouter);
 app.use('/api/me', meRouter);
 app.use('/api/plates', platesRouter);
 app.use('/api/employees', employeesRouter);
+app.use('/api/admin', adminRouter);
 
 async function start() {
   await runMigrations();
