@@ -1,8 +1,11 @@
-import { Platform } from 'react-native';
 import { getStoredSession } from './auth';
 
-const DEV_HOST = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-const BASE_URL = __DEV__ ? `http://${DEV_HOST}:3000` : 'https://api.foothillpark.internal';
+function getBaseUrl(): string {
+  if (!__DEV__) return 'https://api.foothillpark.internal';
+  // Physical device: run `adb reverse tcp:3000 tcp:3000` once per session so localhost works.
+  // Emulator: localhost also resolves to the host machine on both platforms.
+  return 'http://localhost:3000';
+}
 
 async function authHeaders(): Promise<Record<string, string>> {
   const session = await getStoredSession();
@@ -18,7 +21,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    const res = await fetch(`${BASE_URL}${path}`, { ...options, headers, signal: controller.signal });
+    const res = await fetch(`${getBaseUrl()}${path}`, { ...options, headers, signal: controller.signal });
     if (!res.ok) {
       const body = await res.text();
       throw new Error(`API ${path} failed (${res.status}): ${body}`);

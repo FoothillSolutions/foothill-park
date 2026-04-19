@@ -25,7 +25,13 @@ export default function AuthCallbackScreen() {
         console.log('[auth] code length:', code?.length);
         const codeVerifier = await SecureStore.getItemAsync('fp_pkce_verifier');
         console.log('[auth] verifier from store:', !!codeVerifier, 'length:', codeVerifier?.length);
-        if (!codeVerifier) throw new Error('No code verifier in store');
+        if (!codeVerifier) {
+          // Stale deep link replay (Android re-delivers last intent on relaunch).
+          // Verifier was already consumed by a prior successful sign-in — just hydrate.
+          await completeSignIn();
+          if (!cancelled) setTimeout(() => router.replace('/(auth)/scan'), 100);
+          return;
+        }
 
         setStatus('Exchanging tokens…');
         await exchangeCodeForTokens(code, codeVerifier, 'foothill-park://auth');
