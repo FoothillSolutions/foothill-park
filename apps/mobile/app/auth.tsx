@@ -16,19 +16,24 @@ export default function AuthCallbackScreen() {
   const [status, setStatus] = useState('Signing you in…');
 
   useEffect(() => {
+    console.log('[auth] mount, code present:', !!code);
     if (!code) return;
 
     let cancelled = false;
     (async () => {
       try {
+        console.log('[auth] code length:', code?.length);
         const codeVerifier = await SecureStore.getItemAsync('fp_pkce_verifier');
+        console.log('[auth] verifier from store:', !!codeVerifier, 'length:', codeVerifier?.length);
         if (!codeVerifier) throw new Error('No code verifier in store');
 
+        setStatus('Exchanging tokens…');
         await exchangeCodeForTokens(code, codeVerifier, 'foothill-park://auth');
+        console.log('[auth] tokens exchanged');
         await SecureStore.deleteItemAsync('fp_pkce_verifier');
         await completeSignIn();
+        console.log('[auth] session hydrated, navigating');
 
-        // Small delay to let root layout finish mounting before navigating
         if (!cancelled) setTimeout(() => router.replace('/(auth)/scan'), 100);
       } catch (err) {
         console.error('[AuthCallback] failed:', err);

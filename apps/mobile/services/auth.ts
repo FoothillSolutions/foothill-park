@@ -63,7 +63,7 @@ export async function exchangeCodeForTokens(
   const tokens = await response.json();
 
   const expiresAt = Date.now() + tokens.expires_in * 1000;
-  await SecureStore.setItemAsync(STORE_KEYS.accessToken, tokens.access_token);
+  // access_token (Graph JWT) can exceed SecureStore's 2048-byte limit and is unused — skip it
   await SecureStore.setItemAsync(STORE_KEYS.idToken, tokens.id_token);
   await SecureStore.setItemAsync(STORE_KEYS.expiresAt, String(expiresAt));
   if (tokens.refresh_token) {
