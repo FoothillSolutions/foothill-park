@@ -28,6 +28,13 @@ export interface MeResponse {
   hasPlate: boolean;
 }
 
+export interface EmployeeResponse {
+  id: string;
+  displayName: string;
+  department: string | null;
+  phone: string | null;
+}
+
 export interface PlateResponse {
   id: string;
   plateNumber: string;
@@ -39,6 +46,9 @@ export interface PlateResponse {
 export const api = {
   me: (): Promise<MeResponse> =>
     request('/api/me'),
+
+  getEmployees: (): Promise<EmployeeResponse[]> =>
+    request('/api/employees'),
 
   getMyPlates: (): Promise<PlateResponse[]> =>
     request('/api/plates/my'),

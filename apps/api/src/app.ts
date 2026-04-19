@@ -6,6 +6,7 @@ import { runMigrations } from './db/migrate';
 import healthRouter from './routes/health';
 import meRouter from './routes/me';
 import platesRouter from './routes/plates';
+import employeesRouter from './routes/employees';
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/api/health', healthRouter);
 app.use('/api/me', meRouter);
 app.use('/api/plates', platesRouter);
+app.use('/api/employees', employeesRouter);
 
 async function start() {
   await runMigrations();
