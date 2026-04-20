@@ -8,5 +8,9 @@ apps/mobile/.expo/
 apps/mobile/android/
 apps/mobile/ios/
 
+# Native builds generated at monorepo root by expo run:android/ios
+android/
+ios/
+
 # API build
 apps/api/dist/

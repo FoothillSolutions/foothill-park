@@ -167,10 +167,6 @@ export async function runBambooSync(): Promise<SyncResult> {
   const active = await db.query(
     `SELECT bamboo_id, display_name, email, is_active FROM employees ORDER BY is_active DESC, display_name ASC`
   );
-  console.log('[bambooSync] all employees in DB:');
-  active.rows.forEach((r: any) => {
-    console.log(`  [${r.is_active ? 'ACTIVE' : 'INACTIVE'}] ${r.display_name} | bamboo_id:${r.bamboo_id ?? 'null'} | email:${r.email ?? 'null'}`);
-  });
 
   return result;
 }

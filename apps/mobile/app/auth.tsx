@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as SecureStore from 'expo-secure-store';
@@ -13,7 +13,6 @@ export default function AuthCallbackScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
   const { completeSignIn } = useAuth();
   const router = useRouter();
-  const [status, setStatus] = useState('Signing you in…');
 
   useEffect(() => {
     console.log('[auth] mount, code present:', !!code, 'code value:', code);
@@ -42,7 +41,6 @@ export default function AuthCallbackScreen() {
         }
 
         console.log('[auth] verifier found — exchanging tokens…');
-        setStatus('Exchanging tokens…');
         await exchangeCodeForTokens(code, codeVerifier, 'foothill-park://auth');
         console.log('[auth] tokens exchanged, deleting verifier…');
         await SecureStore.deleteItemAsync('fp_pkce_verifier');
@@ -69,7 +67,7 @@ export default function AuthCallbackScreen() {
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color={theme.colors.primary} />
-      <Text style={styles.text}>{status}</Text>
+      <Text style={styles.text}>Signing you in…</Text>
     </View>
   );
 }
