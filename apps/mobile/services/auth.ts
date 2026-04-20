@@ -87,10 +87,46 @@ export async function getStoredSession(): Promise<{ accessToken: string; user: U
     if (!idToken || !expiresAtStr || !userInfoStr) return null;
 
     const expiresAt = parseInt(expiresAtStr, 10);
-    if (Date.now() > expiresAt - 60_000) return null;
+    if (Date.now() <= expiresAt - 60_000) {
+      return { accessToken: idToken, user: JSON.parse(userInfoStr) };
+    }
 
-    // accessToken here is the id_token — it's what our API validates
-    return { accessToken: idToken, user: JSON.parse(userInfoStr) };
+    // Token expired or expiring soon — try silent refresh
+    return refreshSession();
+  } catch {
+    return null;
+  }
+}
+
+export async function refreshSession(): Promise<{ accessToken: string; user: UserInfo } | null> {
+  try {
+    const refreshToken = await SecureStore.getItemAsync(STORE_KEYS.refreshToken);
+    if (!refreshToken) return null;
+
+    const response = await fetch(discovery.tokenEndpoint!, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: AUTH_CONFIG.clientId,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      }).toString(),
+    });
+
+    if (!response.ok) return null;
+
+    const tokens = await response.json();
+    const expiresAt = Date.now() + tokens.expires_in * 1000;
+    await SecureStore.setItemAsync(STORE_KEYS.idToken, tokens.id_token);
+    await SecureStore.setItemAsync(STORE_KEYS.expiresAt, String(expiresAt));
+    if (tokens.refresh_token) {
+      await SecureStore.setItemAsync(STORE_KEYS.refreshToken, tokens.refresh_token);
+    }
+    const userInfo = parseIdToken(tokens.id_token);
+    await SecureStore.setItemAsync(STORE_KEYS.userInfo, JSON.stringify(userInfo));
+
+    console.log('[auth] token silently refreshed');
+    return { accessToken: tokens.id_token, user: userInfo };
   } catch {
     return null;
   }

@@ -14,9 +14,14 @@
     "api": "npm run dev --workspace=apps/api",
     "build:api": "npm run build --workspace=apps/api",
     "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
-    "expo-dev-client": "~6.0.20"
+    "expo-dev-client": "~6.0.20",
+    "expo": "~54.0.33",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   }
 }

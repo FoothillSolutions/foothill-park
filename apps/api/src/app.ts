@@ -8,6 +8,7 @@ import meRouter from './routes/me';
 import platesRouter from './routes/plates';
 import employeesRouter from './routes/employees';
 import adminRouter from './routes/admin';
+import { startNightlyBambooSync } from './jobs/scheduler';
 
 const app = express();
 
@@ -26,6 +27,7 @@ async function start() {
   app.listen(config.port, () => {
     console.log(`API running on port ${config.port} [${config.nodeEnv}]`);
   });
+  startNightlyBambooSync();
 }
 
 start().catch((err) => {

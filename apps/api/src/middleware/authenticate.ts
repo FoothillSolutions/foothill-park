@@ -48,6 +48,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     },
     (err, decoded) => {
       if (err) {
+        console.error('[authenticate] JWT rejected:', err.message);
         res.status(401).json({ error: 'Invalid token' });
         return;
       }

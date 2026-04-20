@@ -12,6 +12,7 @@ interface Employee {
   displayName: string;
   department: string | null;
   phone: string | null;
+  discordId: string | null;
 }
 
 export default function EmployeesScreen() {
@@ -22,7 +23,11 @@ export default function EmployeesScreen() {
 
   useEffect(() => {
     api.getEmployees()
-      .then(setEmployees)
+      .then((data) => {
+        console.log('[employees] total count:', data.length);
+        console.log('[employees] sample (first 5):', JSON.stringify(data.slice(0, 5), null, 2));
+        setEmployees(data);
+      })
       .catch(() => setError('Could not load employees.'))
       .finally(() => setLoading(false));
   }, []);
@@ -79,16 +84,26 @@ export default function EmployeesScreen() {
               <Text style={styles.empName}>{item.displayName}</Text>
               {item.department && <Text style={styles.empDept}>{item.department}</Text>}
             </View>
-            {item.phone ? (
-              <TouchableOpacity
-                style={styles.callChip}
-                onPress={() => Linking.openURL(`tel:${item.phone}`)}
-              >
-                <Text style={styles.callChipText}>📞 Call</Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.noPhone}>No phone</Text>
-            )}
+            <View style={styles.actions}>
+              {item.phone ? (
+                <TouchableOpacity
+                  style={styles.callChip}
+                  onPress={() => Linking.openURL(`tel:${item.phone}`)}
+                >
+                  <Text style={styles.callChipText}>📞 Call</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.noPhone}>No phone</Text>
+              )}
+              {item.discordId && (
+                <TouchableOpacity
+                  style={styles.discordChip}
+                  onPress={() => Linking.openURL('discord://')}
+                >
+                  <Text style={styles.discordChipText}>💬 {item.discordId}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         )}
       />
@@ -122,11 +137,17 @@ const styles = StyleSheet.create({
   info: { flex: 1 },
   empName: { fontSize: 16, fontWeight: '600', color: theme.colors.dark },
   empDept: { fontSize: 13, color: theme.colors.textSecondary, marginTop: 2 },
+  actions: { gap: 6, alignItems: 'flex-end' },
   callChip: {
     backgroundColor: theme.colors.primary, paddingVertical: 6,
     paddingHorizontal: 12, borderRadius: theme.radius.full,
   },
   callChipText: { color: theme.colors.white, fontSize: 13, fontWeight: '600' },
+  discordChip: {
+    backgroundColor: '#5865F2', paddingVertical: 6,
+    paddingHorizontal: 12, borderRadius: theme.radius.full,
+  },
+  discordChipText: { color: theme.colors.white, fontSize: 12, fontWeight: '600' },
   noPhone: { fontSize: 12, color: theme.colors.dark, opacity: 0.35 },
   empty: { textAlign: 'center', marginTop: 40, color: theme.colors.dark, opacity: 0.4 },
 });

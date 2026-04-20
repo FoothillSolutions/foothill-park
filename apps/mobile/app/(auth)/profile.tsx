@@ -18,6 +18,7 @@ export default function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [plateError, setPlateError] = useState('');
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     api.getMyPlates().then((plates) => {
@@ -43,6 +44,21 @@ export default function ProfileScreen() {
       setPlateError(err.message ?? 'Failed to save plate.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSyncBamboo() {
+    setSyncing(true);
+    try {
+      const { result } = await api.syncBamboo();
+      Alert.alert(
+        'Sync Complete',
+        `Inserted: ${result.inserted}\nUpdated: ${result.updated}\nLinked: ${result.linked}\nDeactivated: ${result.deactivated}`
+      );
+    } catch (err: any) {
+      Alert.alert('Sync Failed', err.message ?? 'Unknown error');
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -104,6 +120,13 @@ export default function ProfileScreen() {
         )}
       </View>
 
+      {/* Admin: BambooHR sync */}
+      <TouchableOpacity style={styles.syncButton} onPress={handleSyncBamboo} disabled={syncing}>
+        {syncing
+          ? <ActivityIndicator color={theme.colors.primary} size="small" />
+          : <Text style={styles.syncText}>Sync BambooHR</Text>}
+      </TouchableOpacity>
+
       {/* Sign out */}
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
         <Text style={styles.signOutText}>Sign Out</Text>
@@ -149,8 +172,14 @@ const styles = StyleSheet.create({
   saveText: { color: theme.colors.white, fontWeight: '600' },
   buttonDisabled: { opacity: 0.5 },
 
+  syncButton: {
+    paddingVertical: 16, borderRadius: theme.radius.md,
+    borderWidth: 1.5, borderColor: theme.colors.primary, alignItems: 'center',
+  },
+  syncText: { color: theme.colors.primary, fontSize: 16, fontWeight: '600' },
+
   signOutButton: {
-    marginTop: 8, paddingVertical: 16, borderRadius: theme.radius.md,
+    paddingVertical: 16, borderRadius: theme.radius.md,
     borderWidth: 1.5, borderColor: theme.colors.error, alignItems: 'center',
   },
   signOutText: { color: theme.colors.error, fontSize: 16, fontWeight: '600' },

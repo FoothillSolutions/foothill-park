@@ -44,6 +44,7 @@ export interface EmployeeResponse {
   displayName: string;
   department: string | null;
   phone: string | null;
+  discordId: string | null;
 }
 
 export interface PlateResponse {
@@ -69,6 +70,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ plateNumber }),
     }),
+
+  syncBamboo: (): Promise<{ ok: boolean; result: { inserted: number; updated: number; linked: number; deactivated: number } }> =>
+    request('/api/admin/sync-bamboo', { method: 'POST' }),
 
   lookupPlate: (plateNumber: string): Promise<{
     found: boolean;

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/authenticate';
 import { db } from '../db/connection';
+import { runBambooSync } from '../services/bambooSync';
 
 const router = Router();
 
@@ -30,6 +31,17 @@ router.get('/audit-logs', authenticate, async (req, res) => {
   } catch (err) {
     console.error('[GET /api/admin/audit-logs]', err);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/admin/sync-bamboo — manual trigger for the nightly BambooHR sync
+router.post('/sync-bamboo', authenticate, async (_req, res) => {
+  try {
+    const result = await runBambooSync();
+    res.json({ ok: true, result });
+  } catch (err) {
+    console.error('[POST /api/admin/sync-bamboo]', err);
+    res.status(500).json({ error: String(err) });
   }
 });
 
