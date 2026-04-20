@@ -1,16 +1,19 @@
 export const theme = {
   colors: {
-    primary: '#2D6DB5',   // buttons, headers, active states
-    dark: '#1A1A2E',      // text, navigation
-    accent: '#5BA4E6',    // highlights, secondary actions
-    white: '#FFFFFF',     // backgrounds, card surfaces
+    primary: '#2D6DB5',      // buttons, headers, active states
+    primaryDark: '#1F4E82',  // gradient dark-end on login/auth
+    dark: '#1A1A2E',         // text, navigation
+    accent: '#5BA4E6',       // highlights, secondary actions
+    white: '#FFFFFF',        // backgrounds, card surfaces
+    discord: '#5865F2',      // Discord action chips/buttons
 
     // Semantic aliases
     background: '#FFFFFF',
     surface: '#F5F8FC',
     border: '#D6E4F5',
     textPrimary: '#1A1A2E',
-    textSecondary: '#5BA4E6',
+    textSecondary: '#6B7A90',
+    textTertiary: '#9AA5B8',
     error: '#D9534F',
     success: '#28A745',
   },

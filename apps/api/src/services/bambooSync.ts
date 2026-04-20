@@ -80,10 +80,6 @@ export async function runBambooSync(): Promise<SyncResult> {
   console.log('[bambooSync] fetching report…');
   const employees = await fetchReport();
   console.log(`[bambooSync] fetched ${employees.length} employees`);
-  if (employees.length > 0) {
-    console.log('[bambooSync] first employee raw keys:', Object.keys(employees[0]));
-    console.log('[bambooSync] first employee sample:', JSON.stringify(employees[0]));
-  }
 
   const activeBambooIds: string[] = [];
 
@@ -162,10 +158,6 @@ export async function runBambooSync(): Promise<SyncResult> {
   console.log(
     `[bambooSync] done — inserted:${result.inserted} updated:${result.updated} ` +
     `linked:${result.linked} deactivated:${result.deactivated}`
-  );
-
-  const active = await db.query(
-    `SELECT bamboo_id, display_name, email, is_active FROM employees ORDER BY is_active DESC, display_name ASC`
   );
 
   return result;

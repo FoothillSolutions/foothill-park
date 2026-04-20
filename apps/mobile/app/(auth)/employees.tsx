@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Linking, TextInput, ActivityIndicator,
+  Linking, TextInput, ActivityIndicator, Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../constants/theme';
 import { api } from '../../services/api';
 
 interface Employee {
@@ -13,6 +13,17 @@ interface Employee {
   department: string | null;
   phone: string | null;
   discordId: string | null;
+}
+
+function getAvatarColor(name: string): string {
+  const hue = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) * 37 % 360;
+  return `hsl(${hue},45%,55%)`;
+}
+
+function getAvatarInitials(name: string): string {
+  const words = name.trim().split(/\s+/);
+  const letters = words.slice(0, 2).map((w) => w.charAt(0).toUpperCase());
+  return letters.join('');
 }
 
 export default function EmployeesScreen() {
@@ -24,8 +35,6 @@ export default function EmployeesScreen() {
   useEffect(() => {
     api.getEmployees()
       .then((data) => {
-        console.log('[employees] total count:', data.length);
-        console.log('[employees] sample (first 5):', JSON.stringify(data.slice(0, 5), null, 2));
         setEmployees(data);
       })
       .catch(() => setError('Could not load employees.'))
@@ -40,7 +49,7 @@ export default function EmployeesScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color="#2D6DB5" />
       </View>
     );
   }
@@ -55,99 +64,354 @@ export default function EmployeesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchBar}>
-        <Ionicons name="search" size={16} color={theme.colors.border} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by name or department..."
-          placeholderTextColor={theme.colors.border}
-          value={search}
-          onChangeText={setSearch}
-          autoCorrect={false}
-        />
+      {/* Gradient header */}
+      <LinearGradient
+        colors={['#2D6DB5', '#5BA4E6']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        {/* Decorative circles */}
+        <View style={styles.decorCircle1} />
+        <View style={styles.decorCircle2} />
+
+        {/* Header row */}
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.headerEyebrow}>
+              {employees.length} TEAMMATES
+            </Text>
+            <Text style={styles.headerTitle}>People</Text>
+          </View>
+          <View style={styles.headerIconWrapper}>
+            <Ionicons name="people" size={20} color="#FFFFFF" />
+          </View>
+        </View>
+      </LinearGradient>
+
+      {/* Sticky search bar */}
+      <View style={styles.searchWrapper}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={18} color="#9AA5B8" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by name or department…"
+            placeholderTextColor="#9AA5B8"
+            value={search}
+            onChangeText={setSearch}
+            autoCorrect={false}
+            clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
+          />
+          {Platform.OS !== 'ios' && search.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => setSearch('')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={12} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <Text style={styles.empty}>No employees found.</Text>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <View style={styles.avatarSmall}>
-              <Text style={styles.avatarChar}>{item.displayName.charAt(0).toUpperCase()}</Text>
-            </View>
-            <View style={styles.info}>
-              <Text style={styles.empName}>{item.displayName}</Text>
-              {item.department && <Text style={styles.empDept}>{item.department}</Text>}
-            </View>
-            <View style={styles.actions}>
-              {item.phone ? (
-                <TouchableOpacity
-                  style={styles.callChip}
-                  onPress={() => Linking.openURL(`tel:${item.phone}`)}
-                >
-                  <Text style={styles.callChipText}>📞 Call</Text>
-                </TouchableOpacity>
-              ) : (
-                <Text style={styles.noPhone}>No phone</Text>
-              )}
-              {item.discordId && (
-                <TouchableOpacity
-                  style={styles.discordChip}
-                  onPress={() => Linking.openURL('discord://')}
-                >
-                  <Text style={styles.discordChipText}>💬 {item.discordId}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No matches</Text>
+            <Text style={styles.emptySubtitle}>Try a different name or team</Text>
           </View>
-        )}
+        }
+        renderItem={({ item }) => {
+          const avatarBg = getAvatarColor(item.displayName);
+          const initials = getAvatarInitials(item.displayName);
+          return (
+            <View style={styles.card}>
+              {/* Avatar */}
+              <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
+                <Text style={styles.avatarText}>{initials}</Text>
+              </View>
+
+              {/* Info column */}
+              <View style={styles.info}>
+                <Text style={styles.empName} numberOfLines={1}>
+                  {item.displayName}
+                </Text>
+                {item.department ? (
+                  <View style={styles.deptChip}>
+                    <Text style={styles.deptChipText}>{item.department}</Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {/* Actions column */}
+              <View style={styles.actions}>
+                {item.phone ? (
+                  <TouchableOpacity
+                    style={styles.callButton}
+                    onPress={() => Linking.openURL(`tel:${item.phone}`)}
+                    activeOpacity={0.75}
+                  >
+                    <Ionicons name="call" size={12} color="#FFFFFF" />
+                    <Text style={styles.callButtonText}>Call</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={styles.noPhone}>No phone</Text>
+                )}
+                {item.discordId ? (
+                  <TouchableOpacity
+                    style={styles.discordButton}
+                    onPress={() => Linking.openURL('discord://')}
+                    activeOpacity={0.75}
+                  >
+                    <Ionicons name="chatbubbles" size={12} color="#FFFFFF" />
+                    <Text style={styles.discordButtonText} numberOfLines={1}>
+                      {item.discordId}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </View>
+          );
+        }}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.colors.white },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  errorText: { color: theme.colors.error, fontSize: 15 },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F8FC',
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F8FC',
+  },
+  errorText: {
+    fontSize: 15,
+    color: '#D9534F',
+  },
 
+  // Header
+  header: {
+    height: 140,
+    paddingTop: 54,
+    paddingBottom: 18,
+    paddingHorizontal: 20,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  decorCircle1: {
+    position: 'absolute',
+    right: -40,
+    top: -40,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  decorCircle2: {
+    position: 'absolute',
+    right: 40,
+    bottom: -80,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  headerEyebrow: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  headerTitle: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  headerIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Search bar
+  searchWrapper: {
+    backgroundColor: '#F5F8FC',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
   searchBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    margin: 16, padding: 12, backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.md, borderWidth: 1.5, borderColor: theme.colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#D6E4F5',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  searchInput: { flex: 1, fontSize: 15, color: theme.colors.dark },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1A1A2E',
+    paddingVertical: 0,
+  },
+  clearButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#D6E4F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-  list: { paddingHorizontal: 16, paddingBottom: 100 },
-  separator: { height: 1, backgroundColor: theme.colors.border },
+  // List
+  list: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 140,
+  },
 
-  row: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12,
+  // Card
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#D6E4F5',
+    gap: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#1A1A2E',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.03,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
-  avatarSmall: {
-    width: 42, height: 42, borderRadius: 21,
-    backgroundColor: theme.colors.primary, alignItems: 'center', justifyContent: 'center',
+
+  // Avatar
+  avatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  avatarChar: { fontSize: 18, fontWeight: '700', color: theme.colors.white },
-  info: { flex: 1 },
-  empName: { fontSize: 16, fontWeight: '600', color: theme.colors.dark },
-  empDept: { fontSize: 13, color: theme.colors.textSecondary, marginTop: 2 },
-  actions: { gap: 6, alignItems: 'flex-end' },
-  callChip: {
-    backgroundColor: theme.colors.primary, paddingVertical: 6,
-    paddingHorizontal: 12, borderRadius: theme.radius.full,
+  avatarText: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-  callChipText: { color: theme.colors.white, fontSize: 13, fontWeight: '600' },
-  discordChip: {
-    backgroundColor: '#5865F2', paddingVertical: 6,
-    paddingHorizontal: 12, borderRadius: theme.radius.full,
+
+  // Info
+  info: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
   },
-  discordChipText: { color: theme.colors.white, fontSize: 12, fontWeight: '600' },
-  noPhone: { fontSize: 12, color: theme.colors.dark, opacity: 0.35 },
-  empty: { textAlign: 'center', marginTop: 40, color: theme.colors.dark, opacity: 0.4 },
+  empName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1A2E',
+    letterSpacing: -0.2,
+  },
+  deptChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(45,109,181,0.08)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  deptChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#2D6DB5',
+  },
+
+  // Actions
+  actions: {
+    alignItems: 'flex-end',
+    gap: 5,
+    flexShrink: 0,
+  },
+  callButton: {
+    backgroundColor: '#2D6DB5',
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  callButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  discordButton: {
+    backgroundColor: '#5865F2',
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  discordButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    maxWidth: 60,
+  },
+  noPhone: {
+    fontSize: 10,
+    color: '#9AA5B8',
+  },
+
+  // Empty state
+  emptyState: {
+    alignItems: 'center',
+    marginTop: 80,
+    gap: 12,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#9AA5B8',
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: '#9AA5B8',
+  },
 });

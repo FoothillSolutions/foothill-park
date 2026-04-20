@@ -1,7 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View, TouchableOpacity, Text, StyleSheet, Linking, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../constants/theme';
 import { GATE_PHONE, GATE_LABEL } from '../../constants/config';
 
 async function callGate() {
@@ -17,7 +16,7 @@ async function callGate() {
 function GateButton() {
   return (
     <TouchableOpacity style={styles.gate} onPress={callGate} activeOpacity={0.8}>
-      <Ionicons name="call" size={16} color={theme.colors.white} />
+      <Ionicons name="call" size={15} color="#FFFFFF" />
       <Text style={styles.gateLabel}>{GATE_LABEL}</Text>
     </TouchableOpacity>
   );
@@ -28,12 +27,21 @@ export default function AuthLayout() {
     <View style={styles.flex}>
       <Tabs
         screenOptions={{
-          headerStyle: { backgroundColor: theme.colors.primary },
-          headerTintColor: theme.colors.white,
-          headerTitleStyle: { fontWeight: '600' },
-          tabBarActiveTintColor: theme.colors.primary,
-          tabBarInactiveTintColor: theme.colors.dark,
-          tabBarStyle: { borderTopColor: theme.colors.border },
+          headerShown: false,
+          tabBarActiveTintColor: '#2D6DB5',
+          tabBarInactiveTintColor: '#9AA5B8',
+          tabBarStyle: {
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            borderTopColor: '#D6E4F5',
+            borderTopWidth: 1,
+            paddingBottom: 28,
+            paddingTop: 8,
+            height: 88,
+          },
+          tabBarLabelStyle: {
+            fontSize: 10,
+            fontWeight: '600',
+          },
         }}
       >
         <Tabs.Screen
@@ -70,22 +78,27 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   gate: {
     position: 'absolute',
-    bottom: 90,
-    right: 20,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.radius.full,
+    bottom: 104,
+    right: 16,
+    backgroundColor: '#2D6DB5',
+    borderRadius: 999,
     paddingVertical: 10,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
     borderWidth: 1.5,
-    borderColor: theme.colors.accent,
+    borderColor: '#5BA4E6',
+    shadowColor: '#2D6DB5',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  gateLabel: { color: theme.colors.white, fontWeight: '700', fontSize: 13, letterSpacing: 0.3 },
+  gateLabel: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+    letterSpacing: 0.3,
+  },
 });

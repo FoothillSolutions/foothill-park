@@ -29,7 +29,11 @@ export async function findOrCreateEmployee(
 ): Promise<Employee> {
   const normalizedEmail = email.toLowerCase();
 
-  // 1. Existing SSO employee — always update name + fill in email if missing
+  // 1. Existing SSO employee — always update name + fill in email if missing.
+  // Pre-emptively merge any BambooHR orphan FIRST so the email slot is free
+  // before we try to set it on the SSO row (avoids unique-constraint violation).
+  await mergeBambooRow(entraId, normalizedEmail);
+
   const byEntraId = await db.query<Employee>(
     `UPDATE employees
      SET display_name = $2, email = COALESCE(email, $3), updated_at = NOW()
@@ -38,9 +42,6 @@ export async function findOrCreateEmployee(
     [entraId, displayName, normalizedEmail]
   );
   if (byEntraId.rows[0]) {
-    // Merge orphan BambooHR row for same email (covers the case where SSO row
-    // was created before sync and a separate BambooHR row now exists)
-    await mergeBambooRow(entraId, normalizedEmail);
     return byEntraId.rows[0];
   }
 
@@ -84,8 +85,9 @@ async function mergeBambooRow(entraId: string, email: string): Promise<void> {
      WHERE entra_id = $1`,
     [entraId, bamboo_id, phone, department, discord_id]
   );
+  // Clear email on the orphan so the unique index no longer blocks the SSO row
   await db.query(
-    `UPDATE employees SET is_active = false, updated_at = NOW()
+    `UPDATE employees SET is_active = false, email = NULL, updated_at = NOW()
      WHERE email = $1 AND entra_id IS NULL`,
     [email]
   );

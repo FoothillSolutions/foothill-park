@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Foothill Park — UI Redesign</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Amiri:wght@700&display=swap" rel="stylesheet"/>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #0E1323;
+    background-image:
+      radial-gradient(ellipse 1200px 600px at 20% 0%, rgba(45,109,181,0.25) 0%, transparent 60%),
+      radial-gradient(ellipse 900px 500px at 80% 100%, rgba(91,164,230,0.18) 0%, transparent 60%),
+      linear-gradient(180deg, #0E1323 0%, #070A15 100%);
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #E6ECFA;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes dotPulse {
+    0%,80%,100% { opacity: 0.3; transform: scale(0.7); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scanLine {
+    0% { top: 6px; }
+    50% { top: calc(100% - 8px); }
+    100% { top: 6px; }
+  }
+  @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+  .canvas {
+    padding: 48px 32px 80px;
+    max-width: 1580px; margin: 0 auto;
+  }
+  .canvas-head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 40px; padding: 0 8px;
+  }
+  .brand {
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: #5BA4E6; font-weight: 700;
+  }
+  .title {
+    font-size: 36px; font-weight: 700; letter-spacing: -0.8px;
+    color: #fff; margin-top: 6px;
+  }
+  .sub {
+    font-size: 14px; color: rgba(230,236,250,0.55);
+    margin-top: 8px; max-width: 640px; line-height: 1.5;
+  }
+  .meta {
+    font-size: 11px; color: rgba(230,236,250,0.4);
+    letter-spacing: 0.5px; text-align: right;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 36px 28px;
+    justify-items: center;
+  }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .label {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: rgba(230,236,250,0.5);
+  }
+  .cell-title {
+    font-size: 16px; font-weight: 600; color: #fff; letter-spacing: -0.2px;
+  }
+  .cell-sub {
+    font-size: 12px; color: rgba(230,236,250,0.45);
+    margin-top: 2px;
+  }
+  .cell-header { text-align: center; }
+
+  .section-head {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 14px;
+    margin-top: 24px; padding: 0 4px;
+  }
+  .section-head .line {
+    flex: 1; height: 1px; background: rgba(230,236,250,0.1);
+  }
+  .section-head .tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: rgba(230,236,250,0.4);
+  }
+
+  /* Tweaks panel */
+  .tweaks-panel {
+    position: fixed; right: 20px; bottom: 20px;
+    width: 280px; background: #151B2F;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px; padding: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    z-index: 100; display: none;
+    font-family: -apple-system, system-ui;
+    color: #E6ECFA;
+  }
+  .tweaks-panel.open { display: block; animation: fadeIn 200ms; }
+  .tweaks-panel h3 {
+    margin: 0 0 4px; font-size: 14px; font-weight: 700; letter-spacing: -0.2px;
+  }
+  .tweaks-panel p { margin: 0 0 14px; font-size: 12px; color: rgba(230,236,250,0.5); }
+  .tweak-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 13px;
+  }
+  .tweak-row:first-of-type { border-top: none; }
+  .tweak-row select, .tweak-row input[type=text] {
+    background: #0B0F1C; border: 1px solid rgba(255,255,255,0.1);
+    color: #E6ECFA; padding: 6px 8px; border-radius: 6px;
+    font-size: 12px; font-family: inherit; width: 130px;
+  }
+  .seg { display: flex; background: #0B0F1C; border-radius: 8px; padding: 2px; gap: 2px; }
+  .seg button {
+    background: transparent; border: none; color: rgba(230,236,250,0.6);
+    padding: 5px 10px; font-size: 11px; font-weight: 600; border-radius: 6px;
+    cursor: pointer; font-family: inherit;
+  }
+  .seg button.active { background: #2D6DB5; color: #fff; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <div class="tweaks-panel" id="tweaks">
+    <h3>Tweaks</h3>
+    <p>Play with the design direction</p>
+    <div class="tweak-row">
+      <span>Header style</span>
+      <div class="seg" id="tw-header">
+        <button data-v="gradient" class="active">Gradient</button>
+        <button data-v="solid">Solid</button>
+      </div>
+    </div>
+
+    <div class="tweak-row">
+      <span>Scan result</span>
+      <div class="seg" id="tw-result">
+        <button data-v="found" class="active">Found</button>
+        <button data-v="notfound">Not found</button>
+      </div>
+    </div>
+    <div class="tweak-row">
+      <span>Theme</span>
+      <div class="seg" id="tw-theme">
+        <button data-v="brand" class="active">Brand</button>
+        <button data-v="dark">Dark</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="screens/Shared.jsx"></script>
+  <script type="text/babel" src="screens/Auth.jsx"></script>
+  <script type="text/babel" src="screens/Onboarding.jsx"></script>
+  <script type="text/babel" src="screens/Scan.jsx"></script>
+  <script type="text/babel" src="screens/Employees.jsx"></script>
+  <script type="text/babel" src="screens/Profile.jsx"></script>
+
+  <script type="text/babel">
+    const TWEAK_DEFAULS = /*EDITMODE-BEGIN*/{
+      "plateState": "US-CA",
+      "scanResult": "found",
+      "theme": "brand"
+    }/*EDITMODE-END*/;
+
+    const DEMO_USER = {
+      displayName: 'Alex Morgan',
+      email: 'alex.morgan@foothilltech.com',
+    };
+
+    function Phone({ label, sub, children, dark }) {
+      return (
+        <div className="cell">
+          <IOSDevice width={390} height={844} dark={dark || false}>
+            {children}
+          </IOSDevice>
+          <div className="cell-header">
+            <div className="cell-title">{label}</div>
+            {sub && <div className="cell-sub">{sub}</div>}
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [tweaks, setTweaks] = React.useState(TWEAK_DEFAULS);
+      const [loading, setLoading] = React.useState(false);
+      const [plate, setPlate] = React.useState('7BXJ482');
+
+      // Precomputed demo scan result based on tweak
+      const scanResult = tweaks.scanResult === 'found'
+        ? {
+            plate: '2-1139-A',
+            found: true,
+            owner: {
+              displayName: 'Maya Patel',
+              department: 'Engineering · Platform',
+              phone: '+1 805 555 0132',
+              discordId: 'maya.p',
+            },
+          }
+        : { plate: '2-1139-A', found: false };
+
+      return (
+        <div className="canvas">
+          <div className="canvas-head">
+            <div>
+              <div className="brand">Foothill Park · UI Redesign</div>
+              <div className="title">Every screen, rebuilt.</div>
+              <div className="sub">
+                A premium mobile redesign of the internal employee parking app.
+                Same logic, same API, fresh visual layer using the existing brand tokens.
+                Live click-through — switch screens below, or open Tweaks to play with variants.
+              </div>
+            </div>
+            <div className="meta">
+              6 screens · React Native / Expo<br/>
+              Primary #2D6DB5 · Dark #1A1A2E<br/>
+              Accent #5BA4E6 · Discord #5865F2
+            </div>
+          </div>
+
+          <div className="grid">
+            {/* Unauth */}
+            <div className="section-head">
+              <div className="tag">Unauthenticated</div>
+              <div className="line"/>
+            </div>
+            <Phone label="01 · Login" sub="Hero + Microsoft SSO" dark>
+              <LoginScreen loading={loading}
+                onSignIn={() => { setLoading(true); setTimeout(() => setLoading(false), 1600); }}/>
+            </Phone>
+            <Phone label="02 · Auth callback" sub="Signing you in…" dark>
+              <AuthCallbackScreen/>
+            </Phone>
+            <Phone label="03 · Onboarding" sub="Register your plate">
+              <OnboardingScreen/>
+            </Phone>
+
+            {/* Authed */}
+            <div className="section-head">
+              <div className="tag">Authenticated</div>
+              <div className="line"/>
+            </div>
+            <Phone label="04 · Scan (default)" sub="Camera + manual lookup">
+              <ScanScreen/>
+            </Phone>
+            <Phone label="05 · Scan result" sub="Slide-up owner card">
+              <ScanScreen initialResult={scanResult}/>
+            </Phone>
+            <Phone label="06 · Camera view" sub="Animated scanning frame" dark>
+              <CameraView onClose={() => {}} onDetect={() => {}}/>
+            </Phone>
+
+            <Phone label="07 · Employees" sub="Searchable roster">
+              <EmployeesScreen/>
+            </Phone>
+            <Phone label="08 · Profile" sub="Plate, Bamboo sync, sign out">
+              <ProfileScreen user={DEMO_USER} plate={plate}
+                onUpdatePlate={setPlate}/>
+            </Phone>
+            <Phone label="09 · Profile (editing)" sub="Inline plate edit">
+              <ProfileInEdit/>
+            </Phone>
+          </div>
+        </div>
+      );
+    }
+
+    // A variant of profile pre-opened in edit mode, for display
+    function ProfileInEdit() {
+      const [plate, setPlate] = React.useState('7-0339-96');
+      const ref = React.useRef(null);
+      React.useEffect(() => {
+        // auto-click "Change" once mounted to show edit state
+        const t = setTimeout(() => {
+          const btns = ref.current?.querySelectorAll('div');
+          // find any element whose text is exactly "Change" and click it
+          const change = [...(ref.current?.querySelectorAll('span') || [])]
+            .find(n => n.textContent.trim() === 'Change');
+          if (change) change.closest('[style]')?.click();
+        }, 100);
+        return () => clearTimeout(t);
+      }, []);
+      return (
+        <div ref={ref} style={{ width: '100%', height: '100%' }}>
+          <ProfileScreen user={DEMO_USER} plate={plate} onUpdatePlate={setPlate}/>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+    // ─── Tweaks toolbar integration ───
+    (function tweaksSetup() {
+      const panel = document.getElementById('tweaks');
+      let active = false;
+
+      function apply() {
+        // Re-render by dispatching a custom event? Simpler: reload tweaks via state from App.
+        // For this prototype, tweaks are read once at App mount; we just reload on change.
+      }
+
+      window.addEventListener('message', (e) => {
+        if (!e.data) return;
+        if (e.data.type === '__activate_edit_mode') { active = true; panel.classList.add('open'); }
+        if (e.data.type === '__deactivate_edit_mode') { active = false; panel.classList.remove('open'); }
+      });
+      window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+
+      document.querySelectorAll('.seg').forEach(seg => {
+        seg.addEventListener('click', (e) => {
+          const btn = e.target.closest('button'); if (!btn) return;
+          const key = seg.id.replace('tw-', '');
+          seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const val = btn.dataset.v;
+          const map = { header: 'headerStyle', state: 'plateState', result: 'scanResult', theme: 'theme' };
+          const k = map[key];
+          const edit = {};
+          edit[k] = val;
+          window.parent.postMessage({ type: '__edit_mode_set_keys', edits: edit }, '*');
+          setTimeout(() => location.reload(), 120);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

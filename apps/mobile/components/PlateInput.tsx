@@ -1,5 +1,5 @@
-import { View, TextInput, Text, StyleSheet } from 'react-native';
-import { theme } from '../constants/theme';
+import { View, TextInput, Text, StyleSheet, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { formatPlate, isValidPlate } from '../utils/plateParser';
 
 interface Props {
@@ -17,59 +17,79 @@ export function PlateInput({ value, onChange, error }: Props) {
 
   const showValid = value.length > 0 && isValidPlate(value);
 
+  const borderBg = error ? '#D9534F' : showValid ? '#2D6DB5' : '#D6E4F5';
+
   return (
     <View>
-      <View style={[styles.inputWrapper, error ? styles.inputError : showValid ? styles.inputValid : null]}>
-        <TextInput
-          style={styles.input}
-          value={value}
-          onChangeText={handleChange}
-          placeholder="e.g. 12-345-67"
-          placeholderTextColor={theme.colors.border}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          maxLength={12}
-          keyboardType="default"
-        />
+      <View style={[styles.borderWrapper, { backgroundColor: borderBg }]}>
+        <View style={styles.innerWrapper}>
+          <TextInput
+            style={styles.input}
+            value={value}
+            onChangeText={handleChange}
+            placeholder="e.g. 7-0339-96"
+            placeholderTextColor="#9AA5B8"
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={12}
+            keyboardType="default"
+          />
+          {showValid && (
+            <View style={styles.checkBadge}>
+              <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+            </View>
+          )}
+        </View>
       </View>
       {error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : showValid ? (
-        <Text style={styles.hintText}>Looks good: {formatPlate(value)}</Text>
+        <Text style={styles.validText}>Looks good — ready to register</Text>
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  inputWrapper: {
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.surface,
+  borderWrapper: {
+    borderRadius: 14,
+    padding: 2,
   },
-  inputError: {
-    borderColor: theme.colors.error,
-  },
-  inputValid: {
-    borderColor: theme.colors.success,
+  innerWrapper: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   input: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    flex: 1,
+    paddingVertical: 16,
+    paddingLeft: 16,
+    paddingRight: 48,
     fontSize: 22,
     fontWeight: '700',
-    color: theme.colors.dark,
+    color: '#1A1A2E',
     letterSpacing: 3,
+    fontFamily: Platform.select({ ios: 'Courier New', android: 'monospace' }),
+  },
+  checkBadge: {
+    position: 'absolute',
+    right: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#28A745',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   errorText: {
-    marginTop: 6,
+    marginTop: 8,
     fontSize: 13,
-    color: theme.colors.error,
+    color: '#D9534F',
   },
-  hintText: {
-    marginTop: 6,
+  validText: {
+    marginTop: 8,
     fontSize: 13,
-    color: theme.colors.success,
+    color: '#28A745',
   },
 });
