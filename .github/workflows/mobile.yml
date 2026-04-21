@@ -1,0 +1,41 @@
+name: Mobile CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/mobile/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: apps/mobile
+        run: npm run typecheck
+
+      - name: EAS Build (Android APK, preview)
+        working-directory: apps/mobile
+        run: eas build --platform android --profile preview --non-interactive
