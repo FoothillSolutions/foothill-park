@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Pressable,
-  Linking, KeyboardAvoidingView,
+  Alert, KeyboardAvoidingView,
   Platform, ScrollView, TextInput,
   Animated,
 } from 'react-native';
@@ -81,6 +81,31 @@ function ResultCard({
   plate: string;
   onReset: () => void;
 }) {
+  const [dmSending, setDmSending] = useState(false);
+
+  async function handleDiscordDm(discordId: string, displayName: string) {
+    Alert.alert(
+      'Send Discord Message',
+      `Notify ${displayName} that their car is blocking you?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send',
+          onPress: async () => {
+            setDmSending(true);
+            try {
+              await api.sendDiscordDm(discordId, displayName);
+              Alert.alert('Message Sent', `${displayName} has been notified on Discord.`);
+            } catch (err: any) {
+              Alert.alert('Failed', err.message ?? 'Could not send Discord message.');
+            } finally {
+              setDmSending(false);
+            }
+          },
+        },
+      ]
+    );
+  }
   const translateY = useRef(new Animated.Value(24)).current;
   const opacity    = useRef(new Animated.Value(0)).current;
 
@@ -156,11 +181,14 @@ function ResultCard({
 
             {result.owner.discordId ? (
               <Pressable
-                style={styles.discordBtn}
-                onPress={() => Linking.openURL(`discord://users/${result.owner.discordId}`)}
+                style={[styles.discordBtn, dmSending && { opacity: 0.6 }]}
+                onPress={() => handleDiscordDm(result.owner.discordId!, result.owner.displayName)}
+                disabled={dmSending}
               >
                 <FontAwesome5 name="discord" size={18} color={C.white} />
-                <Text style={styles.actionBtnText}>Discord</Text>
+                <Text style={styles.actionBtnText}>
+                  {dmSending ? 'Sending…' : 'Discord'}
+                </Text>
               </Pressable>
             ) : null}
           </View>

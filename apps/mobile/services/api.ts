@@ -1,7 +1,7 @@
 import { getStoredSession } from './auth';
 
 function getBaseUrl(): string {
-  if (!__DEV__) return 'https://api.foothillpark.internal';
+  if (!__DEV__) return 'https://foothill-park.foothilltech.net';
   // Physical device: run `adb reverse tcp:3000 tcp:3000` once per session so localhost works.
   // Emulator: localhost also resolves to the host machine on both platforms.
   return 'http://localhost:3000';
@@ -81,5 +81,11 @@ export const api = {
     request('/api/plates/lookup', {
       method: 'POST',
       body: JSON.stringify({ plateNumber }),
+    }),
+
+  sendDiscordDm: (discordUsername: string, ownerName: string): Promise<{ ok: boolean }> =>
+    request('/api/discord/dm', {
+      method: 'POST',
+      body: JSON.stringify({ discordUsername, ownerName }),
     }),
 };

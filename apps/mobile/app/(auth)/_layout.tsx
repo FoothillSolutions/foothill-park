@@ -1,16 +1,10 @@
 import { Tabs } from 'expo-router';
-import { View, TouchableOpacity, Text, StyleSheet, Linking, Alert } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GATE_PHONE, GATE_LABEL } from '../../constants/config';
 
-async function callGate() {
-  const url = `tel:${GATE_PHONE}`;
-  const supported = await Linking.canOpenURL(url);
-  if (!supported) {
-    Alert.alert('Cannot Place Call', 'Phone calls are not supported on this device.');
-    return;
-  }
-  Linking.openURL(url);
+function callGate() {
+  Linking.openURL(`tel:${GATE_PHONE}`);
 }
 
 function GateButton() {

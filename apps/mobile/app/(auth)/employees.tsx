@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Linking, TextInput, ActivityIndicator, Platform,
+  Alert, TextInput, ActivityIndicator, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -156,27 +156,34 @@ export default function EmployeesScreen() {
 
               {/* Actions column */}
               <View style={styles.actions}>
-                {item.phone ? (
-                  <TouchableOpacity
-                    style={styles.callButton}
-                    onPress={() => Linking.openURL(`tel:${item.phone}`)}
-                    activeOpacity={0.75}
-                  >
-                    <Ionicons name="call" size={12} color="#FFFFFF" />
-                    <Text style={styles.callButtonText}>Call</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <Text style={styles.noPhone}>No phone</Text>
-                )}
                 {item.discordId ? (
                   <TouchableOpacity
                     style={styles.discordButton}
-                    onPress={() => Linking.openURL('discord://')}
+                    onPress={() =>
+                      Alert.alert(
+                        'Send Discord Message',
+                        `Notify ${item.displayName} that their car is blocking you?`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Send',
+                            onPress: () =>
+                              api.sendDiscordDm(item.discordId!, item.displayName)
+                                .then(() =>
+                                  Alert.alert('Message Sent', `${item.displayName} has been notified on Discord.`)
+                                )
+                                .catch((err: any) =>
+                                  Alert.alert('Failed', err.message ?? 'Could not send Discord message.')
+                                ),
+                          },
+                        ]
+                      )
+                    }
                     activeOpacity={0.75}
                   >
                     <FontAwesome5 name="discord" size={12} color="#FFFFFF" />
                     <Text style={styles.discordButtonText} numberOfLines={1}>
-                      {item.discordId}
+                      Discord
                     </Text>
                   </TouchableOpacity>
                 ) : null}
