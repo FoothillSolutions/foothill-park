@@ -16,10 +16,10 @@ async function authHeaders(): Promise<Record<string, string>> {
   };
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+async function request<T>(path: string, options?: RequestInit, timeoutMs = 8000): Promise<T> {
   const headers = await authHeaders();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(`${getBaseUrl()}${path}`, { ...options, headers, signal: controller.signal });
     if (!res.ok) {
@@ -72,7 +72,7 @@ export const api = {
     }),
 
   syncBamboo: (): Promise<{ ok: boolean; result: { inserted: number; updated: number; linked: number; deactivated: number } }> =>
-    request('/api/admin/sync-bamboo', { method: 'POST' }),
+    request('/api/admin/sync-bamboo', { method: 'POST' }, 30_000),
 
   lookupPlate: (plateNumber: string): Promise<{
     found: boolean;

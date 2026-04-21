@@ -68,6 +68,10 @@ export default function AuthLayout() {
             tabBarIcon: ({ color, size }) => <Ionicons name="person-circle" size={size} color={color} />,
           }}
         />
+        <Tabs.Screen
+          name="admin"
+          options={{ href: null }}
+        />
       </Tabs>
       <GateButton />
     </View>

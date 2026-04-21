@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { PlateDisplay } from '../../components/PlateDisplay';
 import CameraScanner from '../../components/CameraScanner';
 import { api } from '../../services/api';
@@ -158,7 +159,7 @@ function ResultCard({
                 style={styles.discordBtn}
                 onPress={() => Linking.openURL(`discord://users/${result.owner.discordId}`)}
               >
-                <Ionicons name="chatbubbles" size={18} color={C.white} />
+                <FontAwesome5 name="discord" size={18} color={C.white} />
                 <Text style={styles.actionBtnText}>Discord</Text>
               </Pressable>
             ) : null}

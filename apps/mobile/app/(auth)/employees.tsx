@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Linking, TextInput, ActivityIndicator, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import { useFocusEffect } from 'expo-router';
 import { api } from '../../services/api';
 
 interface Employee {
@@ -32,7 +34,9 @@ export default function EmployeesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  const loadEmployees = useCallback(() => {
+    setLoading(true);
+    setError('');
     api.getEmployees()
       .then((data) => {
         setEmployees(data);
@@ -40,6 +44,9 @@ export default function EmployeesScreen() {
       .catch(() => setError('Could not load employees.'))
       .finally(() => setLoading(false));
   }, []);
+
+  // Re-fetch every time this tab comes into focus (e.g. after a BambooHR sync)
+  useFocusEffect(loadEmployees);
 
   const filtered = employees.filter((e) =>
     e.displayName.toLowerCase().includes(search.toLowerCase()) ||
@@ -167,7 +174,7 @@ export default function EmployeesScreen() {
                     onPress={() => Linking.openURL('discord://')}
                     activeOpacity={0.75}
                   >
-                    <Ionicons name="chatbubbles" size={12} color="#FFFFFF" />
+                    <FontAwesome5 name="discord" size={12} color="#FFFFFF" />
                     <Text style={styles.discordButtonText} numberOfLines={1}>
                       {item.discordId}
                     </Text>

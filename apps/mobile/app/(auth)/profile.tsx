@@ -5,22 +5,24 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { PlateDisplay } from '../../components/PlateDisplay';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import { isValidPlate, normalizePlate, formatPlate } from '../../utils/plateParser';
+import { ADMIN_EMAILS } from '../../constants/config';
 
 export default function ProfileScreen() {
   const { authState, signOut, setHasPlate } = useAuth();
+  const router = useRouter();
   const user = authState.status === 'authenticated' ? authState.user : null;
+  const isAdmin = ADMIN_EMAILS.includes((user?.email ?? '').toLowerCase());
 
   const [currentPlate, setCurrentPlate] = useState('');
   const [newPlate, setNewPlate] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [plateError, setPlateError] = useState('');
-  const [syncing, setSyncing] = useState(false);
-
   useEffect(() => {
     api.getMyPlates().then((plates) => {
       const active = plates.find((p) => p.isActive);
@@ -45,21 +47,6 @@ export default function ProfileScreen() {
       setPlateError(err.message ?? 'Failed to save plate.');
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleSyncBamboo() {
-    setSyncing(true);
-    try {
-      const { result } = await api.syncBamboo();
-      Alert.alert(
-        'Sync Complete',
-        `Inserted: ${result.inserted}\nUpdated: ${result.updated}\nLinked: ${result.linked}\nDeactivated: ${result.deactivated}`
-      );
-    } catch (err: any) {
-      Alert.alert('Sync Failed', err.message ?? 'Unknown error');
-    } finally {
-      setSyncing(false);
     }
   }
 
@@ -388,51 +375,42 @@ export default function ProfileScreen() {
             )}
           </View>
 
-          {/* 3. BambooHR sync card */}
-          <TouchableOpacity
-            style={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: 16,
-              paddingVertical: 14,
-              paddingHorizontal: 16,
-              borderWidth: 1.5,
-              borderColor: '#2D6DB5',
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              marginBottom: 12,
-            }}
-            onPress={handleSyncBamboo}
-            disabled={syncing}
-            activeOpacity={0.7}
-          >
-            <View
+          {/* 3. Admin panel row — only visible to admins */}
+          {isAdmin && (
+            <TouchableOpacity
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                backgroundColor: 'rgba(45,109,181,0.08)',
+                backgroundColor: '#FFFFFF',
+                borderRadius: 16,
+                paddingVertical: 14,
+                paddingHorizontal: 16,
+                borderWidth: 1.5,
+                borderColor: '#2D6DB5',
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
+                gap: 12,
+                marginBottom: 12,
               }}
+              onPress={() => router.push('/(auth)/admin')}
+              activeOpacity={0.7}
             >
-              <Ionicons name="leaf" size={18} color="#2D6DB5" />
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#2D6DB5' }}>
-                {syncing ? 'Syncing…' : 'Sync BambooHR'}
-              </Text>
-              <Text style={{ fontSize: 12, color: '#6B7A90', marginTop: 2 }}>
-                Pulls latest employees &amp; plates
-              </Text>
-            </View>
-
-            {syncing
-              ? <ActivityIndicator color="#2D6DB5" size="small" />
-              : <Ionicons name="chevron-forward" size={18} color="#9AA5B8" />
-            }
-          </TouchableOpacity>
+              <View style={{
+                width: 36, height: 36, borderRadius: 10,
+                backgroundColor: 'rgba(45,109,181,0.08)',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Ionicons name="shield-checkmark" size={18} color="#2D6DB5" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#2D6DB5' }}>
+                  Admin Panel
+                </Text>
+                <Text style={{ fontSize: 12, color: '#6B7A90', marginTop: 2 }}>
+                  BambooHR sync &amp; system tools
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#9AA5B8" />
+            </TouchableOpacity>
+          )}
 
           {/* 4. Sign out card */}
           <TouchableOpacity
