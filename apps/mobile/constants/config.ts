@@ -4,5 +4,5 @@ export const GATE_LABEL = 'FTS Gate';
 
 // Admins — lower-cased emails that can access the Admin panel
 export const ADMIN_EMAILS = [
-  'mabdalkareem@restaurant365.com',
+  'm.abdalkareem@foothillsolutions.com',
 ];

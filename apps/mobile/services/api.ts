@@ -72,7 +72,7 @@ export const api = {
     }),
 
   syncBamboo: (): Promise<{ ok: boolean; result: { inserted: number; updated: number; linked: number; deactivated: number } }> =>
-    request('/api/admin/sync-bamboo', { method: 'POST' }, 30_000),
+    request('/api/admin/sync-bamboo', { method: 'POST' }, 120_000),
 
   lookupPlate: (plateNumber: string): Promise<{
     found: boolean;
