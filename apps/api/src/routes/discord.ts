@@ -50,9 +50,12 @@ router.post('/dm', authenticate, requirePlate, async (req: Request, res: Respons
   }
 
   try {
+    // Strip legacy discriminator suffix (e.g. "sarawan#3094" → "sarawan")
+    const searchQuery = discordUsername.replace(/#\d{4}$/, '').trim();
+
     // 1. Search guild members by the stored username
     const members: any[] = await discordFetch(
-      `/guilds/${guildId}/members/search?query=${encodeURIComponent(discordUsername)}&limit=10`
+      `/guilds/${guildId}/members/search?query=${encodeURIComponent(searchQuery)}&limit=10`
     );
 
     if (!members || members.length === 0) {
@@ -60,13 +63,14 @@ router.post('/dm', authenticate, requirePlate, async (req: Request, res: Respons
       return;
     }
 
-    // Prefer exact username match; fall back to first result
+    // Prefer exact username match (compare without discriminator); fall back to first result
+    const queryLower = searchQuery.toLowerCase();
     const member =
       members.find(
         (m) =>
-          m.user?.username?.toLowerCase() === discordUsername.toLowerCase() ||
-          m.user?.global_name?.toLowerCase() === discordUsername.toLowerCase() ||
-          m.nick?.toLowerCase() === discordUsername.toLowerCase()
+          m.user?.username?.toLowerCase() === queryLower ||
+          m.user?.global_name?.toLowerCase() === queryLower ||
+          m.nick?.toLowerCase() === queryLower
       ) ?? members[0];
 
     const userId = member?.user?.id;
