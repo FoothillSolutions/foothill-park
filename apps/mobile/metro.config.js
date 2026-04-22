@@ -13,4 +13,18 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
+// Fix for monorepo: expo/AppEntry.js is hoisted to root node_modules
+// so its "../../App" import resolves to the workspace root, not apps/mobile.
+// Redirect it to expo-router's entry instead.
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (
+    moduleName === '../../App' &&
+    context.originModulePath.includes('node_modules/expo/AppEntry')
+  ) {
+    const entryPath = require.resolve('expo-router/entry', { paths: [projectRoot] });
+    return { filePath: entryPath, type: 'sourceFile' };
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = config;

@@ -63,8 +63,44 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
 
       if (!TextRecognition) throw new Error('OCR not available in Expo Go — use a dev build.');
       const result = await TextRecognition.recognize(photo.uri);
-      const blocks = result.blocks.map((b: { text: string }) => b.text);
-      const plate = extractPlateFromOcr(blocks);
+
+      // Map the on-screen scanning frame to photo pixel coordinates
+      const photoW = photo.width  ?? SCREEN_W;
+      const photoH = photo.height ?? SCREEN_H;
+      const scaleX = photoW / SCREEN_W;
+      const scaleY = photoH / SCREEN_H;
+
+      // Expand the frame by 40% on each side to tolerate slight misalignment
+      const margin = 0.4;
+      const frameLeft   = (FRAME_LEFT - FRAME_W  * margin) * scaleX;
+      const frameRight  = (FRAME_LEFT + FRAME_W  * (1 + margin)) * scaleX;
+      const frameTop    = (FRAME_TOP  - FRAME_H  * margin) * scaleY;
+      const frameBottom = (FRAME_TOP  + FRAME_H  * (1 + margin)) * scaleY;
+
+      const textChunks: string[] = [];
+      for (const block of result.blocks) {
+        // Filter: only keep blocks whose centre falls within the expanded frame
+        const f = block.frame ?? block.boundingBox;
+        if (f) {
+          const cx = (f.left ?? f.x ?? 0) + (f.width ?? 0) / 2;
+          const cy = (f.top  ?? f.y ?? 0) + (f.height ?? 0) / 2;
+          if (cx < frameLeft || cx > frameRight || cy < frameTop || cy > frameBottom) {
+            continue; // outside frame — skip (car badges, stickers, etc.)
+          }
+        }
+
+        textChunks.push(block.text);
+        if (block.lines) {
+          for (const line of block.lines) textChunks.push(line.text);
+        }
+      }
+
+      // If bounding-box filtering wiped everything, fall back to all blocks
+      const chunks = textChunks.length > 0
+        ? textChunks
+        : result.blocks.map((b: any) => b.text);
+
+      const plate = extractPlateFromOcr(chunks);
 
       if (plate) {
         onPlateDetected(plate);
