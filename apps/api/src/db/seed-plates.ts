@@ -48,7 +48,7 @@ const PLATES: { plate: string; normalized: string; discordId: string }[] = [
   { plate: '7-4229-H',  normalized: '74229H',   discordId: '962294511827054642'  }, // Amir Alkam
   { plate: '3-9956-D',  normalized: '39956D',   discordId: '1325385733783031849' }, // Abdulrahman Mahamdah
   { plate: '7-0424-96', normalized: '7042496',  discordId: '867849351786659860'  }, // Zain Abubaker
-  { plate: '1579D',     normalized: '1579D',    discordId: '763134509594968086'  }, // Mahmoud Shouli
+  { plate: '1-1579-D',  normalized: '11579D',   discordId: '763134509594968086'  }, // Mahmoud Shouli
   { plate: '21139a',    normalized: '21139A',   discordId: '484256699209875457'  }, // Mohammad Awad (AbuAwad)
   { plate: '7302394',   normalized: '7302394',  discordId: '488744230244712478'  }, // Abdulrahman Hab Ruman
 ];
