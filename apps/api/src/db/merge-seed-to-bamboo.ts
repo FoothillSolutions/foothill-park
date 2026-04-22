@@ -43,6 +43,7 @@ const MAPPING: { discordId: string; seedName: string; bambooEmail: string }[] = 
   { discordId: '930833927109750834',  seedName: 'Hamdan',                   bambooEmail: 'abdalrahman.hamdan@foothillsolutions.com'   },
   { discordId: '631410949487591427',  seedName: 'AbuWard',                  bambooEmail: 'o.mansour@foothillsolutions.com'            }, // Osama Abu Mansour
   { discordId: '1122424731572908032', seedName: 'abu ibrahim',              bambooEmail: 'ibrahim.hamshari@foothillsolutions.com'     }, // Bilal Hamada - using closest match
+  { discordId: '484256699209875457',  seedName: 'AbuAwad',                 bambooEmail: 'mohammad@foothillsolutions.com'              }, // Mohammad Awad — merged manually
 ];
 
 async function merge() {
