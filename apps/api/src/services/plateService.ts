@@ -19,10 +19,40 @@ export async function registerPlate(
 ): Promise<Plate> {
   const plateNormalized = normalizePlate(plateNumber);
 
-  // Deactivate any existing plates for this employee first
+  // ── Merge seed placeholder ───────────────────────────────────────────────
+  // If the plate currently belongs to a seed placeholder employee
+  // (entra_id starts with 'seed_'), absorb all their plates and deactivate
+  // the placeholder so there are no duplicate employee rows.
+  const seedCheck = await db.query<{ seedEmpId: string }>(
+    `SELECT e.id AS "seedEmpId"
+     FROM plates p
+     JOIN employees e ON e.id = p.employee_id
+     WHERE p.plate_normalized = $1
+       AND p.country_code     = $2
+       AND e.entra_id LIKE 'seed_%'
+     LIMIT 1`,
+    [plateNormalized, countryCode]
+  );
+
+  if (seedCheck.rows[0]) {
+    const seedEmpId = seedCheck.rows[0].seedEmpId;
+    // Transfer ALL of the seed employee's plates to the real SSO employee
+    await db.query(
+      `UPDATE plates SET employee_id = $1, updated_at = NOW() WHERE employee_id = $2`,
+      [employeeId, seedEmpId]
+    );
+    // Retire the now-empty seed placeholder
+    await db.query(
+      `UPDATE employees SET is_active = false, updated_at = NOW() WHERE id = $1`,
+      [seedEmpId]
+    );
+    console.log(`[plateService] merged seed placeholder ${seedEmpId} → employee ${employeeId}`);
+  }
+
+  // Deactivate any OTHER plates this employee already has
   await db.query(
-    `UPDATE plates SET is_active = false WHERE employee_id = $1`,
-    [employeeId]
+    `UPDATE plates SET is_active = false WHERE employee_id = $1 AND plate_normalized != $2`,
+    [employeeId, plateNormalized]
   );
 
   const result = await db.query<Plate>(
@@ -41,7 +71,7 @@ export async function getMyPlates(employeeId: string): Promise<Plate[]> {
   const result = await db.query<Plate>(
     `SELECT id, plate_number AS "plateNumber", plate_normalized AS "plateNormalized",
             country_code AS "countryCode", is_active AS "isActive"
-     FROM plates WHERE employee_id = $1 ORDER BY created_at DESC`,
+     FROM plates WHERE employee_id = $1 AND is_active = true ORDER BY created_at DESC`,
     [employeeId]
   );
   return result.rows;

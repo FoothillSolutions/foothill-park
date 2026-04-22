@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ActivityIndicator, Dimensions,
-  Pressable, Animated,
+  View, Text, StyleSheet, ActivityIndicator,
+  Pressable, Animated, LayoutChangeEvent,
 } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { BlurView } from 'expo-blur';
@@ -11,11 +11,9 @@ import { extractPlateFromOcr } from '../utils/ocrParser';
 let TextRecognition: any = null;
 try { TextRecognition = require('@react-native-ml-kit/text-recognition').default; } catch {}
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const FRAME_W = SCREEN_W * 0.78;
-const FRAME_H = FRAME_W * 0.42;
-const FRAME_TOP = SCREEN_H / 2 - FRAME_H / 2;
-const FRAME_LEFT = (SCREEN_W - FRAME_W) / 2;
+// Frame dimensions as fractions of the container — no pixel math needed
+const FRAME_W_RATIO = 0.78;
+const FRAME_ASPECT  = 0.42; // height = width * 0.42  (licence-plate shape)
 
 interface Props {
   onPlateDetected: (plate: string) => void;
@@ -28,16 +26,28 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
   const [scanning, setScanning] = useState(false);
   const [hint, setHint] = useState('Aim at the licence plate');
 
+  // Actual measured container size — set via onLayout
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const frameW = containerSize.width  * FRAME_W_RATIO;
+  const frameH = frameW * FRAME_ASPECT;
+  const frameLeft = (containerSize.width  - frameW) / 2;
+  const frameTop  = (containerSize.height - frameH) / 2;
+
+  const onLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    setContainerSize({ width, height });
+  }, []);
+
   // Animated scan line
   const scanAnim = useRef(new Animated.Value(0)).current;
   const scanLoop = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
-    if (scanning) {
+    if (scanning && frameH > 0) {
       scanAnim.setValue(0);
       scanLoop.current = Animated.loop(
         Animated.timing(scanAnim, {
-          toValue: FRAME_H - 14,
+          toValue: frameH - 4,
           duration: 1400,
           useNativeDriver: true,
         })
@@ -47,10 +57,8 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
       scanLoop.current?.stop();
       scanAnim.setValue(0);
     }
-    return () => {
-      scanLoop.current?.stop();
-    };
-  }, [scanning]);
+    return () => { scanLoop.current?.stop(); };
+  }, [scanning, frameH]);
 
   const capture = useCallback(async () => {
     if (!cameraRef.current || scanning) return;
@@ -61,41 +69,49 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.85, base64: false });
       if (!photo) throw new Error('No photo captured');
 
-      if (!TextRecognition) throw new Error('OCR not available in Expo Go — use a dev build.');
+      if (!TextRecognition) throw new Error('OCR not available — use a dev build.');
       const result = await TextRecognition.recognize(photo.uri);
 
-      // Map the on-screen scanning frame to photo pixel coordinates
-      const photoW = photo.width  ?? SCREEN_W;
-      const photoH = photo.height ?? SCREEN_H;
-      const scaleX = photoW / SCREEN_W;
-      const scaleY = photoH / SCREEN_H;
+      // Map on-screen frame to photo pixel coordinates
+      const photoW = photo.width  ?? containerSize.width;
+      const photoH = photo.height ?? containerSize.height;
+      const scaleX = photoW / containerSize.width;
+      const scaleY = photoH / containerSize.height;
 
-      // Expand the frame by 40% on each side to tolerate slight misalignment
       const margin = 0.4;
-      const frameLeft   = (FRAME_LEFT - FRAME_W  * margin) * scaleX;
-      const frameRight  = (FRAME_LEFT + FRAME_W  * (1 + margin)) * scaleX;
-      const frameTop    = (FRAME_TOP  - FRAME_H  * margin) * scaleY;
-      const frameBottom = (FRAME_TOP  + FRAME_H  * (1 + margin)) * scaleY;
+      const fLeft   = (frameLeft - frameW * margin) * scaleX;
+      const fRight  = (frameLeft + frameW * (1 + margin)) * scaleX;
+      const fTop    = (frameTop  - frameH * margin) * scaleY;
+      const fBottom = (frameTop  + frameH * (1 + margin)) * scaleY;
 
-      const textChunks: string[] = [];
-      for (const block of result.blocks) {
-        // Filter: only keep blocks whose centre falls within the expanded frame
+      // Sort blocks largest-first — plate digits are much bigger than dealer stickers
+      const blockArea = (b: any) => {
+        const f = b.frame ?? b.boundingBox;
+        return f ? (f.width ?? 0) * (f.height ?? 0) : 0;
+      };
+      const sortedBlocks: any[] = [...result.blocks].sort((a, b) => blockArea(b) - blockArea(a));
+
+      // Filter to blocks whose centre falls within the expanded frame
+      const frameBlocks = sortedBlocks.filter((block: any) => {
         const f = block.frame ?? block.boundingBox;
-        if (f) {
-          const cx = (f.left ?? f.x ?? 0) + (f.width ?? 0) / 2;
-          const cy = (f.top  ?? f.y ?? 0) + (f.height ?? 0) / 2;
-          if (cx < frameLeft || cx > frameRight || cy < frameTop || cy > frameBottom) {
-            continue; // outside frame — skip (car badges, stickers, etc.)
-          }
-        }
+        if (!f) return true; // no bbox info — keep it
+        const cx = (f.left ?? f.x ?? 0) + (f.width ?? 0) / 2;
+        const cy = (f.top  ?? f.y ?? 0) + (f.height ?? 0) / 2;
+        return cx >= fLeft && cx <= fRight && cy >= fTop && cy <= fBottom;
+      });
 
+      const activeBlocks = frameBlocks.length > 0 ? frameBlocks : sortedBlocks;
+
+      // Build text chunks: large blocks first, then their lines
+      const textChunks: string[] = [];
+      for (const block of activeBlocks) {
         textChunks.push(block.text);
         if (block.lines) {
           for (const line of block.lines) textChunks.push(line.text);
         }
       }
 
-      // If bounding-box filtering wiped everything, fall back to all blocks
+      // Fallback: all blocks if nothing passed the frame filter
       const chunks = textChunks.length > 0
         ? textChunks
         : result.blocks.map((b: any) => b.text);
@@ -112,9 +128,9 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
       setHint('Scan failed — try again');
       setScanning(false);
     }
-  }, [scanning, onPlateDetected]);
+  }, [scanning, onPlateDetected, containerSize, frameLeft, frameTop, frameW, frameH]);
 
-  // --- Permission loading state ---
+  // --- Permission loading ---
   if (!permission) {
     return (
       <View style={styles.center}>
@@ -123,15 +139,12 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
     );
   }
 
-  // --- Permission denied UI ---
   if (!permission.granted) {
     return (
       <View style={[styles.center, { backgroundColor: '#F5F8FC', gap: 20 }]}>
         <Ionicons name="camera-outline" size={56} color="#2D6DB5" />
         <Text style={styles.permTitle}>Camera access needed</Text>
-        <Text style={styles.permSubtitle}>
-          Allow camera access to scan licence plates
-        </Text>
+        <Text style={styles.permSubtitle}>Allow camera access to scan licence plates</Text>
         <Pressable style={styles.permBtn} onPress={requestPermission}>
           <Text style={styles.permBtnText}>Allow Camera</Text>
         </Pressable>
@@ -139,119 +152,60 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
     );
   }
 
-  const cornerBorderColor = scanning ? '#28A745' : '#FFFFFF';
-  const cornerShadow = scanning
-    ? {
-        shadowColor: '#28A745',
-        shadowOpacity: 0.7,
-        shadowRadius: 16,
-        elevation: 8,
-      }
-    : {};
+  const cornerColor = scanning ? '#28A745' : '#FFFFFF';
+  const cornerShadow = scanning ? {
+    shadowColor: '#28A745', shadowOpacity: 0.7, shadowRadius: 16, elevation: 8,
+  } : {};
 
   return (
-    <View style={styles.root}>
-      {/* Camera */}
+    <View style={styles.root} onLayout={onLayout}>
+      {/* Camera fills entire background */}
       <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={'back' as CameraType} />
 
-      {/* 4-panel dark overlay */}
-      {/* Top panel */}
-      <View style={[styles.panel, { top: 0, left: 0, right: 0, height: FRAME_TOP }]} />
-      {/* Bottom panel */}
-      <View style={[styles.panel, { bottom: 0, left: 0, right: 0, height: FRAME_TOP }]} />
-      {/* Left panel */}
-      <View
-        style={[
-          styles.panel,
-          {
-            top: FRAME_TOP,
-            bottom: FRAME_TOP,
-            left: 0,
-            width: FRAME_LEFT,
-          },
-        ]}
-      />
-      {/* Right panel */}
-      <View
-        style={[
-          styles.panel,
-          {
-            top: FRAME_TOP,
-            bottom: FRAME_TOP,
-            right: 0,
-            width: FRAME_LEFT,
-          },
-        ]}
-      />
+      {containerSize.width > 0 && (
+        <>
+          {/* ── 4-panel dark overlay ── */}
+          {/* Top */}
+          <View style={[styles.panel, { top: 0, left: 0, right: 0, height: frameTop }]} />
+          {/* Bottom */}
+          <View style={[styles.panel, { top: frameTop + frameH, left: 0, right: 0, bottom: 0 }]} />
+          {/* Left */}
+          <View style={[styles.panel, { top: frameTop, left: 0, width: frameLeft, height: frameH }]} />
+          {/* Right */}
+          <View style={[styles.panel, { top: frameTop, right: 0, width: frameLeft, height: frameH }]} />
 
-      {/* Frame container with corners and scan line */}
-      <View
-        style={{
-          position: 'absolute',
-          top: FRAME_TOP,
-          left: FRAME_LEFT,
-          width: FRAME_W,
-          height: FRAME_H,
-        }}
-      >
-        {/* Top-left corner */}
-        <View
-          style={[
-            styles.corner,
-            { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4 },
-            { borderColor: cornerBorderColor, borderRadius: 4 },
-            cornerShadow,
-          ]}
-        />
-        {/* Top-right corner */}
-        <View
-          style={[
-            styles.corner,
-            { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4 },
-            { borderColor: cornerBorderColor, borderRadius: 4 },
-            cornerShadow,
-          ]}
-        />
-        {/* Bottom-left corner */}
-        <View
-          style={[
-            styles.corner,
-            { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4 },
-            { borderColor: cornerBorderColor, borderRadius: 4 },
-            cornerShadow,
-          ]}
-        />
-        {/* Bottom-right corner */}
-        <View
-          style={[
-            styles.corner,
-            { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4 },
-            { borderColor: cornerBorderColor, borderRadius: 4 },
-            cornerShadow,
-          ]}
-        />
+          {/* ── Frame corners + scan line ── */}
+          <View style={{
+            position: 'absolute',
+            top: frameTop,
+            left: frameLeft,
+            width: frameW,
+            height: frameH,
+          }}>
+            {/* Top-left */}
+            <View style={[styles.corner, { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4 }, { borderColor: cornerColor }, cornerShadow]} />
+            {/* Top-right */}
+            <View style={[styles.corner, { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4 }, { borderColor: cornerColor }, cornerShadow]} />
+            {/* Bottom-left */}
+            <View style={[styles.corner, { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4 }, { borderColor: cornerColor }, cornerShadow]} />
+            {/* Bottom-right */}
+            <View style={[styles.corner, { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4 }, { borderColor: cornerColor }, cornerShadow]} />
 
-        {/* Animated scan line */}
-        {scanning && (
-          <Animated.View
-            style={[
-              styles.scanLine,
-              { transform: [{ translateY: scanAnim }] },
-            ]}
-          />
-        )}
-      </View>
+            {scanning && (
+              <Animated.View style={[styles.scanLine, { transform: [{ translateY: scanAnim }] }]} />
+            )}
+          </View>
+        </>
+      )}
 
-      {/* Top chrome */}
+      {/* ── Top chrome ── */}
       <View style={styles.topChrome}>
-        {/* Close button */}
         <Pressable style={styles.closeBtn} onPress={onClose}>
           <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.closeBorder} />
           <Ionicons name="close" size={22} color="#FFFFFF" />
         </Pressable>
 
-        {/* Status pill */}
         <View style={styles.statusPill}>
           <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.statusPillBorder} />
@@ -262,22 +216,21 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
         </View>
       </View>
 
-      {/* Hint pill */}
-      <View style={styles.hintContainer}>
-        <View style={styles.hintPill}>
-          <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={styles.hintPillBorder} />
-          <Text style={styles.hintText}>{hint}</Text>
+      {/* ── Hint pill ── */}
+      {containerSize.height > 0 && (
+        <View style={[styles.hintContainer, { top: frameTop + frameH + 20 }]}>
+          <View style={styles.hintPill}>
+            <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={styles.hintPillBorder} />
+            <Text style={styles.hintText}>{hint}</Text>
+          </View>
         </View>
-      </View>
+      )}
 
-      {/* Shutter button */}
+      {/* ── Shutter ── */}
       <View style={styles.shutterContainer}>
         <Pressable
-          style={[
-            styles.shutterBtn,
-            { backgroundColor: scanning ? '#28A745' : '#2D6DB5' },
-          ]}
+          style={[styles.shutterBtn, { backgroundColor: scanning ? '#28A745' : '#2D6DB5' }]}
           onPress={capture}
           disabled={scanning}
         >
@@ -295,8 +248,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-
-  // Permission screens
   center: {
     flex: 1,
     alignItems: 'center',
@@ -304,42 +255,27 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   permTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A2E',
-    textAlign: 'center',
+    fontSize: 18, fontWeight: '700', color: '#1A1A2E', textAlign: 'center',
   },
   permSubtitle: {
-    fontSize: 14,
-    color: '#6B7A90',
-    textAlign: 'center',
+    fontSize: 14, color: '#6B7A90', textAlign: 'center',
   },
   permBtn: {
-    backgroundColor: '#2D6DB5',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 999,
+    backgroundColor: '#2D6DB5', paddingVertical: 14, paddingHorizontal: 32, borderRadius: 999,
   },
   permBtnText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 15, fontWeight: '700', color: '#FFFFFF',
   },
-
-  // Dark overlay panels
   panel: {
     position: 'absolute',
     backgroundColor: 'rgba(0,0,0,0.62)',
   },
-
-  // Corner brackets
   corner: {
     position: 'absolute',
     width: 32,
     height: 32,
+    borderRadius: 4,
   },
-
-  // Animated scan line
   scanLine: {
     position: 'absolute',
     left: 6,
@@ -351,8 +287,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-
-  // Top chrome row
   topChrome: {
     position: 'absolute',
     top: 58,
@@ -363,12 +297,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   closeBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 44, height: 44, borderRadius: 22,
+    overflow: 'hidden', alignItems: 'center', justifyContent: 'center',
   },
   closeBorder: {
     ...StyleSheet.absoluteFillObject,
@@ -377,55 +307,34 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
   },
   statusPill: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    overflow: 'hidden',
+    paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999, overflow: 'hidden',
   },
   statusPillBorder: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
   },
   statusPillInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
   },
   statusPillText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 12, fontWeight: '600', color: '#FFFFFF',
   },
-
-  // Hint pill
   hintContainer: {
     position: 'absolute',
-    top: FRAME_TOP + FRAME_H + 20,
     left: 0,
     right: 0,
     alignItems: 'center',
   },
   hintPill: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    overflow: 'hidden',
+    paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999, overflow: 'hidden',
   },
   hintPillBorder: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
   },
   hintText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 13, fontWeight: '600', color: '#FFFFFF',
   },
-
-  // Shutter button
   shutterContainer: {
     position: 'absolute',
     bottom: 48,
@@ -434,16 +343,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   shutterBtn: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 12,
+    width: 76, height: 76, borderRadius: 38,
+    borderWidth: 4, borderColor: 'rgba(255,255,255,0.9)',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 12, elevation: 12,
   },
 });

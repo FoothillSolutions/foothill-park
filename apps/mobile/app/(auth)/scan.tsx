@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, Pressable,
   Alert, KeyboardAvoidingView,
   Platform, ScrollView, TextInput,
-  Animated,
+  Animated, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -169,15 +169,16 @@ function ResultCard({
 
           {/* Action buttons */}
           <View style={styles.actionRow}>
-            {result.owner.phone ? (
-              <Pressable
-                style={styles.callBtn}
-                onPress={() => Linking.openURL(`tel:${result.owner.phone}`)}
-              >
-                <Ionicons name="call" size={18} color={C.white} />
-                <Text style={styles.actionBtnText}>Call</Text>
-              </Pressable>
-            ) : null}
+            <Pressable
+              style={[styles.callBtn, !result.owner.phone && styles.callBtnDisabled]}
+              onPress={() => result.owner.phone && Linking.openURL(`tel:${result.owner.phone}`)}
+              disabled={!result.owner.phone}
+            >
+              <Ionicons name="call" size={18} color={C.white} />
+              <Text style={styles.actionBtnText}>
+                {result.owner.phone ? 'Call' : 'No phone'}
+              </Text>
+            </Pressable>
 
             {result.owner.discordId ? (
               <Pressable
@@ -290,6 +291,17 @@ export default function ScanScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Error state ───────────────────────────────────────────────── */}
+        {error ? (
+          <View style={styles.errorCard}>
+            <Ionicons name="alert-circle" size={22} color={C.error} />
+            <Text style={styles.errorText}>{error}</Text>
+            <Pressable onPress={() => setError('')}>
+              <Text style={styles.errorDismiss}>Dismiss</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {/* ── Loading state ─────────────────────────────────────────────── */}
         {loading && (
           <View style={styles.loadingCard}>
@@ -458,6 +470,30 @@ const styles = StyleSheet.create({
     padding: 18,
     paddingHorizontal: 16,
     paddingBottom: 150,
+  },
+
+  // ── Error card ────────────────────────────────────────────────────────────
+  errorCard: {
+    backgroundColor: 'rgba(217,83,79,0.08)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(217,83,79,0.25)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    color: C.error,
+    fontWeight: '500',
+  },
+  errorDismiss: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.error,
   },
 
   // ── Loading card ──────────────────────────────────────────────────────────
@@ -694,6 +730,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  callBtnDisabled: {
+    backgroundColor: C.textTertiary,
+    shadowOpacity: 0,
+    elevation: 0,
+    opacity: 0.7,
   },
   discordBtn: {
     flex: 1,

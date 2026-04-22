@@ -23,12 +23,27 @@ const SIZE_MAP: Record<Size, SizeDef> = {
 };
 
 function parsePlateParts(plate: string): string[] {
-  const match = plate.match(/^([A-Z0-9]{1,2})[\s-]*([A-Z0-9]{2,5})[\s-]*([A-Z0-9]{1,3})$/i);
-  if (match) {
-    return [match[1], match[2], match[3]];
-  }
-  const parts = plate.split(/[\s-]+/).filter(Boolean);
-  return parts.length > 0 ? parts : [plate];
+  const p = plate.toUpperCase().replace(/[\s\-]/g, '');
+
+  // Format B — 1 digit + 4 digits + 1 letter  e.g. 16879A → [1, 6879, A]
+  const b14 = p.match(/^(\d{1})(\d{4})([A-Z])$/);
+  if (b14) return [b14[1], b14[2], b14[3]];
+
+  // Format B — 2 digits + 4 digits + 1 letter  e.g. 164879A → [16, 4879, A]
+  const b24 = p.match(/^(\d{2})(\d{4})([A-Z])$/);
+  if (b24) return [b24[1], b24[2], b24[3]];
+
+  // Format A — 1 digit + 4 digits + 2 digits  e.g. 7299295 → [7, 2992, 95]
+  const a142 = p.match(/^(\d{1})(\d{4})(\d{2})$/);
+  if (a142) return [a142[1], a142[2], a142[3]];
+
+  // Format A — 2 digits + 4 digits + 2 digits  e.g. 76248296 → [76, 2482, 96]
+  const a242 = p.match(/^(\d{2})(\d{4})(\d{2})$/);
+  if (a242) return [a242[1], a242[2], a242[3]];
+
+  // Already has separators — split on them
+  const parts = plate.toUpperCase().split(/[\s-]+/).filter(Boolean);
+  return parts.length > 1 ? parts : [p || plate.toUpperCase()];
 }
 
 export function PlateDisplay({ plate = '7-0339-96', size = 'md' }: { plate?: string; size?: Size }) {

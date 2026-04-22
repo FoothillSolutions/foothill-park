@@ -122,6 +122,26 @@ export function extractPlateFromOcr(blocks: string[]): string | null {
     .map(stripNoise)
     .filter(t => t.length > 0 && !isPhoneNumber(t));
 
+  // ── Pass 0: Try each block individually (largest first) ───────────────────
+  // Plate digits are in a large font — if a single block already contains the
+  // plate pattern we can return immediately without mixing in sticker text.
+  for (const block of cleaned) {
+    const upper = block.toUpperCase();
+    if (PA_A.test(upper)) {
+      const m = PA_A.exec(upper)!;
+      return `${m[1]}${m[2]}${m[3]}`;
+    }
+    if (PA_B.test(upper)) {
+      const m = PA_B.exec(upper)!;
+      return `${m[1]}${m[2]}${m[3]}`;
+    }
+    if (PA_FUSED_A.test(upper)) return PA_FUSED_A.exec(upper)![0];
+    if (PA_FUSED_B.test(upper)) {
+      const m = PA_FUSED_B.exec(upper)!;
+      return m[1] + m[2];
+    }
+  }
+
   const allText = cleaned.join('\n').toUpperCase();
 
   // ── Pass 1: Format A with separators — highest confidence ─────────────────
