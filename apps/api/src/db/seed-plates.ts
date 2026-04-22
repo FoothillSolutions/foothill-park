@@ -1,15 +1,17 @@
 /**
  * Seed script — imports existing plate registrations into the database.
  *
- * Strategy:
- *   1. For each row, look up the employee by discord_id.
- *   2. If found → use their existing id.
- *   3. If not found → create a placeholder employee so the plate can still be stored.
- *      Placeholder entra_id = "seed_<discordId>" to avoid colliding with real SSO users.
- *   4. Insert the plate (skip silently if it already exists).
+ * Strategy (BambooHR is source of truth — run sync FIRST):
+ *   1. Match by discord_id        → exact, best case
+ *   2. Match by display_name      → case-insensitive, for employees BambooHR synced
+ *      When matched by name, also writes the discord_id onto the BambooHR row so
+ *      future syncs and lookups work correctly.
+ *   3. No match → create a seed_<discordId> placeholder so the plate is still
+ *      searchable. The placeholder is absorbed automatically the first time the
+ *      real employee registers their plate in the app.
  *
  * Run with:
- *   npx ts-node -r tsconfig-paths/register src/db/seed-plates.ts
+ *   npx ts-node --compiler-options '{"module":"CommonJS"}' src/db/seed-plates.ts
  */
 
 import { db } from './connection';
@@ -65,24 +67,44 @@ const rows: Row[] = [
   { plate: '21139a',    normalized: '21139A',   name: 'AbuAwad',                   discordId: '484256699209875457'  },
 ];
 
-async function findOrCreateEmployee(row: Row): Promise<string> {
-  // 1. Try to find by discord_id
-  const existing = await db.query<{ id: string }>(
-    'SELECT id FROM employees WHERE discord_id = $1',
+async function resolveEmployee(row: Row): Promise<{ id: string; method: string }> {
+  // 1. Exact discord_id match (works once BambooHR has discord IDs filled in)
+  const byDiscord = await db.query<{ id: string }>(
+    `SELECT id FROM employees WHERE discord_id = $1 AND is_active = true LIMIT 1`,
     [row.discordId]
   );
-  if (existing.rows.length > 0) return existing.rows[0].id;
+  if (byDiscord.rows[0]) return { id: byDiscord.rows[0].id, method: 'discord_id' };
 
-  // 2. Create placeholder employee
+  // 2. Case-insensitive name match against BambooHR employees
+  //    Write discord_id back so future syncs / lookups work correctly.
+  const byName = await db.query<{ id: string }>(
+    `SELECT id FROM employees
+     WHERE is_active = true
+       AND LOWER(display_name) = LOWER($1)
+       AND (discord_id IS NULL OR discord_id = $2)
+     LIMIT 1`,
+    [row.name, row.discordId]
+  );
+  if (byName.rows[0]) {
+    await db.query(
+      `UPDATE employees SET discord_id = $1, updated_at = NOW() WHERE id = $2`,
+      [row.discordId, byName.rows[0].id]
+    );
+    return { id: byName.rows[0].id, method: 'name' };
+  }
+
+  // 3. Fallback — create a seed placeholder so the plate is still searchable.
+  //    The placeholder is merged into the real SSO employee automatically
+  //    the first time they register their plate in the app.
   const entraId = `seed_${row.discordId}`;
-  const result = await db.query<{ id: string }>(
+  const created = await db.query<{ id: string }>(
     `INSERT INTO employees (entra_id, display_name, discord_id)
      VALUES ($1, $2, $3)
      ON CONFLICT (entra_id) DO UPDATE SET discord_id = EXCLUDED.discord_id
      RETURNING id`,
     [entraId, row.name, row.discordId]
   );
-  return result.rows[0].id;
+  return { id: created.rows[0].id, method: 'placeholder' };
 }
 
 async function seed() {
@@ -91,9 +113,11 @@ async function seed() {
   let inserted = 0;
   let skipped = 0;
 
+  let placeholders = 0;
+
   for (const row of rows) {
     try {
-      const empId = await findOrCreateEmployee(row);
+      const { id: empId, method } = await resolveEmployee(row);
 
       const result = await db.query(
         `INSERT INTO plates (employee_id, plate_number, plate_normalized, country_code)
@@ -104,8 +128,10 @@ async function seed() {
       );
 
       if (result.rows.length > 0) {
-        console.log(`  ✅ ${row.plate.padEnd(12)} → ${row.name}`);
+        const tag = method === 'discord_id' ? '🔵' : method === 'name' ? '🟢' : '🟡';
+        console.log(`  ${tag} ${row.plate.padEnd(12)} → ${row.name} [${method}]`);
         inserted++;
+        if (method === 'placeholder') placeholders++;
       } else {
         console.log(`  ⏭️  ${row.plate.padEnd(12)} already exists — skipped`);
         skipped++;
@@ -115,7 +141,10 @@ async function seed() {
     }
   }
 
-  console.log(`\n✅ Done — ${inserted} inserted, ${skipped} skipped.\n`);
+  console.log(`\n✅ Done — ${inserted} inserted (${placeholders} placeholders), ${skipped} skipped.\n`);
+  if (placeholders > 0) {
+    console.log(`  🟡 Placeholder rows will auto-merge when those employees register their plate in the app.\n`);
+  }
   await db.end?.();
   process.exit(0);
 }
