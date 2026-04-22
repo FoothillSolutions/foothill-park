@@ -83,9 +83,9 @@ export const api = {
       body: JSON.stringify({ plateNumber }),
     }),
 
-  sendDiscordDm: (discordUsername: string, ownerName: string): Promise<{ ok: boolean }> =>
+  sendDiscordDm: (discordId: string, ownerName: string): Promise<{ ok: boolean }> =>
     request('/api/discord/dm', {
       method: 'POST',
-      body: JSON.stringify({ discordUsername, ownerName }),
+      body: JSON.stringify({ discordId, ownerName }),
     }),
 };
