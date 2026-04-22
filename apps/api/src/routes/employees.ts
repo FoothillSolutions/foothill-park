@@ -7,7 +7,8 @@ const router = Router();
 router.get('/', authenticate, async (_req, res) => {
   try {
     const result = await db.query(
-      `SELECT id, display_name AS "displayName", department, phone, discord_id AS "discordId"
+      `SELECT id, display_name AS "displayName", department, phone,
+              discord_id AS "discordId", discord_username AS "discordUsername"
        FROM employees
        WHERE is_active = true
        ORDER BY display_name ASC`

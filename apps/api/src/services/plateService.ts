@@ -79,11 +79,12 @@ export async function getMyPlates(employeeId: string): Promise<Plate[]> {
 
 export async function lookupPlate(plateNumber: string): Promise<{
   found: boolean;
-  owner?: { displayName: string; phone: string | null; discordId: string | null; department: string | null };
+  owner?: { displayName: string; phone: string | null; discordId: string | null; discordUsername: string | null; department: string | null };
 }> {
   const plateNormalized = normalizePlate(plateNumber);
   const result = await db.query(
-    `SELECT e.display_name AS "displayName", e.phone, e.discord_id AS "discordId", e.department
+    `SELECT e.display_name AS "displayName", e.phone, e.discord_id AS "discordId",
+            e.discord_username AS "discordUsername", e.department
      FROM plates p
      JOIN employees e ON e.id = p.employee_id
      WHERE p.plate_normalized = $1 AND p.is_active = true AND e.is_active = true`,

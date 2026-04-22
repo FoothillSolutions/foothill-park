@@ -25,46 +25,63 @@ async function discordFetch(path: string, options: RequestInit = {}): Promise<an
 
 /**
  * POST /api/discord/dm
- * Body: { discordId: string; ownerName: string }
+ * Body: { discordUsername: string; ownerName: string }
  *
- * Opens a DM channel directly using the stored numeric Discord user ID
+ * Looks up the user in the company Guild by username, opens a DM channel,
  * and sends a parking-block notification on behalf of the caller.
- *
- * The bot must share a guild with the recipient for Discord to allow the DM.
  */
 router.post('/dm', authenticate, requirePlate, async (req: Request, res: Response) => {
-  const { discordId, ownerName } = req.body as {
-    discordId: string;
+  const { discordUsername, ownerName } = req.body as {
+    discordUsername: string;
     ownerName: string;
   };
 
-  if (!discordId || !ownerName) {
-    res.status(400).json({ error: 'discordId and ownerName are required' });
+  if (!discordUsername || !ownerName) {
+    res.status(400).json({ error: 'discordUsername and ownerName are required' });
     return;
   }
 
-  const botToken = process.env.DISCORD_BOT_TOKEN;
+  const guildId   = process.env.DISCORD_GUILD_ID;
+  const botToken  = process.env.DISCORD_BOT_TOKEN;
 
-  if (!botToken) {
+  if (!guildId || !botToken) {
     res.status(503).json({ error: 'Discord integration is not configured on the server.' });
     return;
   }
 
-  // Validate that discordId is a numeric snowflake
-  if (!/^\d+$/.test(discordId)) {
-    res.status(400).json({ error: 'discordId must be a numeric Discord snowflake.' });
-    return;
-  }
-
   try {
-    // 1. Open (or reuse) a DM channel directly with the stored numeric user ID.
-    //    No guild search needed — we already have the real Discord user ID.
+    // 1. Search guild members by the stored username
+    const members: any[] = await discordFetch(
+      `/guilds/${guildId}/members/search?query=${encodeURIComponent(discordUsername)}&limit=10`
+    );
+
+    if (!members || members.length === 0) {
+      res.status(404).json({ error: `No Discord member found matching "${discordUsername}"` });
+      return;
+    }
+
+    // Prefer exact username match; fall back to first result
+    const member =
+      members.find(
+        (m) =>
+          m.user?.username?.toLowerCase() === discordUsername.toLowerCase() ||
+          m.user?.global_name?.toLowerCase() === discordUsername.toLowerCase() ||
+          m.nick?.toLowerCase() === discordUsername.toLowerCase()
+      ) ?? members[0];
+
+    const userId = member?.user?.id;
+    if (!userId) {
+      res.status(404).json({ error: 'Could not resolve Discord user ID.' });
+      return;
+    }
+
+    // 2. Open (or reuse) a DM channel with that user
     const dmChannel = await discordFetch('/users/@me/channels', {
       method: 'POST',
-      body: JSON.stringify({ recipient_id: discordId }),
+      body: JSON.stringify({ recipient_id: userId }),
     });
 
-    // 2. Send the notification message
+    // 3. Send the notification message
     const senderName = req.user?.displayName ?? 'A colleague';
     const message =
       `👋 Hi **${ownerName}**!\n\n` +

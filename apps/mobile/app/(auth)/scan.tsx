@@ -31,7 +31,7 @@ const C = {
 // ── Types ────────────────────────────────────────────────────────────────────
 type Result =
   | { found: false }
-  | { found: true; owner: { displayName: string; phone: string | null; discordId: string | null; department: string | null } };
+  | { found: true; owner: { displayName: string; phone: string | null; discordId: string | null; discordUsername: string | null; department: string | null } };
 
 // ── Deterministic avatar colour from name ────────────────────────────────────
 function avatarHue(name: string): number {
@@ -83,7 +83,7 @@ function ResultCard({
 }) {
   const [dmSending, setDmSending] = useState(false);
 
-  async function handleDiscordDm(discordId: string, displayName: string) {
+  async function handleDiscordDm(discordUsername: string, displayName: string) {
     Alert.alert(
       'Send Discord Message',
       `Notify ${displayName} that their car is blocking you?`,
@@ -94,7 +94,7 @@ function ResultCard({
           onPress: async () => {
             setDmSending(true);
             try {
-              await api.sendDiscordDm(discordId, displayName);
+              await api.sendDiscordDm(discordUsername, displayName);
               Alert.alert('Message Sent', `${displayName} has been notified on Discord.`);
             } catch (err: any) {
               Alert.alert('Failed', err.message ?? 'Could not send Discord message.');
@@ -180,10 +180,10 @@ function ResultCard({
               </Text>
             </Pressable>
 
-            {result.owner.discordId ? (
+            {result.owner.discordUsername ? (
               <Pressable
                 style={[styles.discordBtn, dmSending && { opacity: 0.6 }]}
-                onPress={() => handleDiscordDm(result.owner.discordId!, result.owner.displayName)}
+                onPress={() => handleDiscordDm(result.owner.discordUsername!, result.owner.displayName)}
                 disabled={dmSending}
               >
                 <FontAwesome5 name="discord" size={18} color={C.white} />

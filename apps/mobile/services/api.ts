@@ -45,6 +45,7 @@ export interface EmployeeResponse {
   department: string | null;
   phone: string | null;
   discordId: string | null;
+  discordUsername: string | null;
 }
 
 export interface PlateResponse {
@@ -76,16 +77,16 @@ export const api = {
 
   lookupPlate: (plateNumber: string): Promise<{
     found: boolean;
-    owner?: { displayName: string; phone: string; discordId: string; department: string };
+    owner?: { displayName: string; phone: string; discordId: string; discordUsername: string | null; department: string };
   }> =>
     request('/api/plates/lookup', {
       method: 'POST',
       body: JSON.stringify({ plateNumber }),
     }),
 
-  sendDiscordDm: (discordId: string, ownerName: string): Promise<{ ok: boolean }> =>
+  sendDiscordDm: (discordUsername: string, ownerName: string): Promise<{ ok: boolean }> =>
     request('/api/discord/dm', {
       method: 'POST',
-      body: JSON.stringify({ discordId, ownerName }),
+      body: JSON.stringify({ discordUsername, ownerName }),
     }),
 };

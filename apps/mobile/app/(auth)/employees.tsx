@@ -156,7 +156,7 @@ export default function EmployeesScreen() {
 
               {/* Actions column */}
               <View style={styles.actions}>
-                {item.discordId ? (
+                {item.discordUsername ? (
                   <TouchableOpacity
                     style={styles.discordButton}
                     onPress={() =>
@@ -168,7 +168,7 @@ export default function EmployeesScreen() {
                           {
                             text: 'Send',
                             onPress: () =>
-                              api.sendDiscordDm(item.discordId!, item.displayName)
+                              api.sendDiscordDm(item.discordUsername!, item.displayName)
                                 .then(() =>
                                   Alert.alert('Message Sent', `${item.displayName} has been notified on Discord.`)
                                 )

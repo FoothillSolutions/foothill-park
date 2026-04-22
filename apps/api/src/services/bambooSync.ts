@@ -51,6 +51,11 @@ function buildDiscordId(emp: BambooEmployee): string | null {
   return emp.customDiscordName || emp.discordName || null;
 }
 
+// Discord username (e.g. "osama_sarawan") — stored separately from the numeric discord_id
+function buildDiscordUsername(emp: BambooEmployee): string | null {
+  return emp.customDiscordName || emp.discordName || null;
+}
+
 async function fetchReport(): Promise<BambooEmployee[]> {
   const { apiKey, subdomain } = config.bambooHr;
   if (!apiKey || !subdomain) throw new Error('BAMBOOHR_API_KEY and BAMBOOHR_SUBDOMAIN must be set');
@@ -93,6 +98,7 @@ export async function runBambooSync(): Promise<SyncResult> {
     const department = emp.department ? String(emp.department) : null;
     const email = emp.workEmail ? String(emp.workEmail).toLowerCase() : null;
     const discordId = buildDiscordId(emp);
+    const discordUsername = buildDiscordUsername(emp);
 
     activeBambooIds.push(bambooId);
 
@@ -100,9 +106,9 @@ export async function runBambooSync(): Promise<SyncResult> {
     const byId = await db.query(
       `UPDATE employees
        SET display_name = $2, phone = $3, department = $4, email = COALESCE(email, $5),
-           discord_id = $6, is_active = true, updated_at = NOW()
+           discord_id = $6, discord_username = $7, is_active = true, updated_at = NOW()
        WHERE bamboo_id = $1`,
-      [bambooId, displayName, phone, department, email, discordId]
+      [bambooId, displayName, phone, department, email, discordId, discordUsername]
     );
     if ((byId.rowCount ?? 0) > 0) { result.updated++; continue; }
 
@@ -111,18 +117,18 @@ export async function runBambooSync(): Promise<SyncResult> {
       const byEmail = await db.query(
         `UPDATE employees
          SET bamboo_id = $1, phone = COALESCE(phone, $3), department = COALESCE(department, $4),
-             discord_id = $5, updated_at = NOW()
+             discord_id = $5, discord_username = $6, updated_at = NOW()
          WHERE email = $2 AND bamboo_id IS NULL`,
-        [bambooId, email, phone, department, discordId]
+        [bambooId, email, phone, department, discordId, discordUsername]
       );
       if ((byEmail.rowCount ?? 0) > 0) { result.linked++; continue; }
     }
 
     // 3. Pre-populate employee — they'll link to their Entra ID on first SSO login
     await db.query(
-      `INSERT INTO employees (bamboo_id, display_name, email, phone, department, discord_id, is_active, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, true, NOW(), NOW())`,
-      [bambooId, displayName, email, phone, department, discordId]
+      `INSERT INTO employees (bamboo_id, display_name, email, phone, department, discord_id, discord_username, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true, NOW(), NOW())`,
+      [bambooId, displayName, email, phone, department, discordId, discordUsername]
     );
     result.inserted++;
   }
