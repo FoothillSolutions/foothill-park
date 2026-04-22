@@ -1,11 +1,6 @@
 name: Mobile CI
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "apps/mobile/**"
   workflow_dispatch:
 
 jobs:
