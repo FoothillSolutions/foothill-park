@@ -29,11 +29,7 @@ export async function findOrCreateEmployee(
 ): Promise<Employee> {
   const normalizedEmail = email.toLowerCase();
 
-  // 1. Existing SSO employee — always update name + fill in email if missing.
-  // Pre-emptively merge any BambooHR orphan FIRST so the email slot is free
-  // before we try to set it on the SSO row (avoids unique-constraint violation).
-  await mergeBambooRow(entraId, normalizedEmail);
-
+  // 1. Existing SSO row — update name + email, then absorb any BambooHR orphan
   const byEntraId = await db.query<Employee>(
     `UPDATE employees
      SET display_name = $2, email = COALESCE(email, $3), updated_at = NOW()
@@ -42,10 +38,18 @@ export async function findOrCreateEmployee(
     [entraId, displayName, normalizedEmail]
   );
   if (byEntraId.rows[0]) {
-    return byEntraId.rows[0];
+    // SSO row already exists — merge any separate BambooHR orphan into it
+    await mergeBambooRow(byEntraId.rows[0].id, entraId, normalizedEmail);
+    // Re-fetch to pick up any fields just merged in
+    const refreshed = await db.query<Employee>(
+      `SELECT ${SELECT_COLS} FROM employees WHERE entra_id = $1`,
+      [entraId]
+    );
+    return refreshed.rows[0];
   }
 
-  // 2. Pre-populated BambooHR row — link their Entra ID on first login
+  // 2. Pre-populated BambooHR row — link their Entra ID on first login.
+  //    The plate is already on this row so it becomes immediately visible.
   const byEmail = await db.query<Employee>(
     `UPDATE employees
      SET entra_id = $1, display_name = $2, updated_at = NOW()
@@ -53,11 +57,12 @@ export async function findOrCreateEmployee(
      RETURNING ${SELECT_COLS}`,
     [entraId, displayName, normalizedEmail]
   );
-  if (byEmail.rows[0]) return byEmail.rows[0];
+  if (byEmail.rows[0]) {
+    console.log(`[employeeService] linked BambooHR row → ${displayName} (${entraId})`);
+    return byEmail.rows[0];
+  }
 
-  // 3. Seed placeholder — upgrade it to a real SSO employee on first login.
-  //    Match by exact display name first, then by individual name words so
-  //    "Mahmoud Abdelkareem" links to the seed row "Mahmoud Abd Al Kareem".
+  // 3. Seed placeholder — upgrade it to a real SSO employee on first login
   const seedRow = await mergeSeedPlaceholder(entraId, displayName, normalizedEmail);
   if (seedRow) {
     console.log(`[employeeService] upgraded seed placeholder → ${displayName} (${entraId})`);
@@ -75,25 +80,68 @@ export async function findOrCreateEmployee(
 }
 
 /**
+ * Called only when the SSO row already exists.
+ * If there is a separate BambooHR orphan with the same email, absorb it:
+ * copy bamboo_id/phone/department/discord onto the SSO row, transfer plates,
+ * then deactivate the orphan.
+ */
+async function mergeBambooRow(ssoRowId: string, entraId: string, email: string): Promise<void> {
+  if (!email) return;
+
+  const bamboo = await db.query<{ id: string; bamboo_id: string; phone: string | null; department: string | null; discord_id: string | null; discord_username: string | null }>(
+    `SELECT id, bamboo_id, phone, department, discord_id, discord_username
+     FROM employees
+     WHERE email = $1 AND entra_id IS NULL AND bamboo_id IS NOT NULL
+     LIMIT 1`,
+    [email]
+  );
+  if (!bamboo.rows[0]) return;
+
+  const { id: bambooRowId, bamboo_id, phone, department, discord_id, discord_username } = bamboo.rows[0];
+
+  // Transfer plates from BambooHR row → SSO row
+  await db.query(
+    `UPDATE plates SET employee_id = $1, updated_at = NOW() WHERE employee_id = $2`,
+    [ssoRowId, bambooRowId]
+  );
+
+  // Clear bamboo_id on orphan first (unique constraint)
+  await db.query(
+    `UPDATE employees SET bamboo_id = NULL, updated_at = NOW() WHERE id = $1`,
+    [bambooRowId]
+  );
+
+  // Copy BambooHR fields onto SSO row
+  await db.query(
+    `UPDATE employees
+     SET bamboo_id        = $2,
+         phone            = COALESCE(phone, $3),
+         department       = COALESCE(department, $4),
+         discord_id       = COALESCE(discord_id, $5),
+         discord_username = COALESCE(discord_username, $6),
+         updated_at       = NOW()
+     WHERE entra_id = $1`,
+    [entraId, bamboo_id, phone, department, discord_id, discord_username]
+  );
+
+  // Deactivate and clear email on the now-empty orphan
+  await db.query(
+    `UPDATE employees SET is_active = false, email = NULL, updated_at = NOW() WHERE id = $1`,
+    [bambooRowId]
+  );
+
+  console.log(`[employeeService] merged BambooHR row (bamboo_id:${bamboo_id}) into SSO row for ${email}`);
+}
+
+/**
  * Tries to find a seed placeholder (entra_id LIKE 'seed_%') whose display_name
  * is a close enough match to the SSO employee's display_name.
- *
- * Matching rules (tried in order):
- *   a) Exact case-insensitive match
- *   b) At least 2 name words (>3 chars each) appear in both names
- *
- * When matched, the placeholder row is upgraded in-place:
- *   - entra_id  ← real SSO id
- *   - email     ← SSO email
- *   - display_name ← SSO display name (official spelling)
- * The employee's existing plates remain attached and are immediately visible.
  */
 async function mergeSeedPlaceholder(
   entraId: string,
   displayName: string,
   email: string
 ): Promise<Employee | null> {
-  // Fetch all active seed placeholders
   const seeds = await db.query<{ id: string; display_name: string }>(
     `SELECT id, display_name FROM employees
      WHERE entra_id LIKE 'seed_%' AND is_active = true`
@@ -105,20 +153,10 @@ async function mergeSeedPlaceholder(
 
   for (const row of seeds.rows) {
     const seedName = row.display_name.toLowerCase();
-
-    // Rule a: exact
-    if (seedName === displayName.toLowerCase()) {
-      bestId = row.id;
-      break;
-    }
-
-    // Rule b: 2+ significant words in common
+    if (seedName === displayName.toLowerCase()) { bestId = row.id; break; }
     const seedWords = seedName.split(/\s+/).filter(w => w.length > 3);
     const common = ssoWords.filter(w => seedWords.includes(w));
-    if (common.length >= 2) {
-      bestId = row.id;
-      break;
-    }
+    if (common.length >= 2) { bestId = row.id; break; }
   }
 
   if (!bestId) return null;
@@ -134,35 +172,6 @@ async function mergeSeedPlaceholder(
     [entraId, displayName, email, bestId]
   );
   return upgraded.rows[0] ?? null;
-}
-
-async function mergeBambooRow(entraId: string, email: string): Promise<void> {
-  if (!email) return;
-  const bamboo = await db.query(
-    `SELECT bamboo_id, phone, department, discord_id FROM employees
-     WHERE email = $1 AND entra_id IS NULL AND bamboo_id IS NOT NULL LIMIT 1`,
-    [email]
-  );
-  if (!bamboo.rows[0]) return;
-
-  const { bamboo_id, phone, department, discord_id } = bamboo.rows[0];
-  await db.query(
-    `UPDATE employees
-     SET bamboo_id = $2,
-         phone = COALESCE(phone, $3),
-         department = COALESCE(department, $4),
-         discord_id = COALESCE(discord_id, $5),
-         updated_at = NOW()
-     WHERE entra_id = $1`,
-    [entraId, bamboo_id, phone, department, discord_id]
-  );
-  // Clear email on the orphan so the unique index no longer blocks the SSO row
-  await db.query(
-    `UPDATE employees SET is_active = false, email = NULL, updated_at = NOW()
-     WHERE email = $1 AND entra_id IS NULL`,
-    [email]
-  );
-  console.log(`[employeeService] merged BambooHR row (bamboo_id:${bamboo_id}) into SSO row for ${email}`);
 }
 
 export async function hasActivePlate(employeeId: string): Promise<boolean> {
