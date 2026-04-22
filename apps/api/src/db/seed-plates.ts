@@ -32,10 +32,10 @@ const PLATES: { plate: string; normalized: string; discordId: string }[] = [
   { plate: '1-5126-D',  normalized: '15126D',   discordId: '1028590144342724629' }, // Anas Khraim
   { plate: '3-3195-D',  normalized: '33195D',   discordId: '483608265280716811'  }, // Abdullah Ahmad
   { plate: '6-3476-94', normalized: '6347694',  discordId: '1383171849000718487' }, // Hanan Tbaileh
-  { plate: '1-2949-B',  normalized: '12949B',   discordId: '560909384659605094'  }, // Osaed Yahya
+  { plate: '1-2949-B',  normalized: '12949B',   discordId: '560903846596050949'  }, // Osaed Yahya
   { plate: '6-7306-92', normalized: '6730692',  discordId: '838342207316033546'  }, // Basel Alsayed
   { plate: '1-3913-K',  normalized: '13913K',   discordId: '1078270861569703947' }, // Bashar Qassis
-  { plate: '4-5403-I',  normalized: '45403I',   discordId: '977852503070740490'  }, // Sohaib Najjar
+  { plate: '4-5403-L',  normalized: '45403L',   discordId: '977852503070740490'  }, // Sohaib Najjar
   { plate: '2-7143-A',  normalized: '27143A',   discordId: '595187030753935370'  }, // Mohammad Amarneh
   { plate: '1-8215-D',  normalized: '18215D',   discordId: '1057251839915085854' }, // Osama Sarawan
   { plate: '30288a',    normalized: '30288A',   discordId: '486202081133330433'  }, // Abdallatif Sulaiman
@@ -51,6 +51,7 @@ const PLATES: { plate: string; normalized: string; discordId: string }[] = [
   { plate: '7-0424-96', normalized: '7042496',  discordId: '867849351786659860'  }, // Zain Abubaker
   { plate: '1579D',     normalized: '1579D',    discordId: '763134509594968086'  }, // Mahmoud Shouli
   { plate: '21139a',    normalized: '21139A',   discordId: '484256699209875457'  }, // Mohammad Awad (AbuAwad)
+  { plate: '7302394',   normalized: '7302394',  discordId: '488744230244712478'  }, // Abdulrahman Hab Ruman
 ];
 
 // ── Discord ID → BambooHR work email (source of truth mapping) ───────────────
@@ -71,7 +72,7 @@ const DISCORD_TO_EMAIL: Record<string, string> = {
   '1028590144342724629': 'anas.khraim@foothillsolutions.com',
   '483608265280716811':  'abdullah@foothillsolutions.com',
   '1383171849000718487': 'hanan.tbaileh@foothillsolutions.com',
-  '560909384659605094':  'osaed.yahya@foothillsolutions.com',
+  '560903846596050949':  'osaed.yahya@foothillsolutions.com',
   '838342207316033546':  'b.alsayed@foothillsolutions.com',
   '1078270861569703947': 'bashar.qassis@foothillsolutions.com',
   '977852503070740490':  'sohaib.najar@foothillsolutions.com',
@@ -89,6 +90,7 @@ const DISCORD_TO_EMAIL: Record<string, string> = {
   '867849351786659860':  'zain.abubaker@foothillsolutions.com',
   '763134509594968086':  'mahmoud.shouli@foothillsolutions.com',
   '484256699209875457':  'mohammad@foothillsolutions.com',
+  '488744230244712478':  'h.abdalrhman@foothillsolutions.com',
 };
 
 async function seed() {
