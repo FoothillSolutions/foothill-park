@@ -14,3 +14,5 @@ ios/
 
 # API build
 apps/api/dist/
+*.apk
+*.aab
