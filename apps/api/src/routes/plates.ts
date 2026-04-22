@@ -62,18 +62,6 @@ router.post('/lookup', authenticate, requirePlate, async (req, res) => {
       req.user!.entraId, req.user!.displayName, req.user!.email
     );
 
-    // Rate limit: 10 lookups per hour per user
-    const rateCheck = await db.query(
-      `SELECT COUNT(*) AS count FROM audit_logs
-       WHERE actor_id = $1 AND action = 'PLATE_LOOKUP'
-         AND created_at > NOW() - INTERVAL '1 hour'`,
-      [actor.id]
-    );
-    if (parseInt(rateCheck.rows[0].count, 10) >= 10) {
-      res.status(429).json({ error: 'Rate limit exceeded. Try again in an hour.' });
-      return;
-    }
-
     const result = await lookupPlate(plateNumber);
 
     await db.query(
