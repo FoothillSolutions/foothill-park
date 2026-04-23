@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { theme } from '../../constants/theme';
 import { EmployeeCardSkeleton } from '../../components/Skeleton';
@@ -34,31 +35,25 @@ function getAvatarInitials(name: string): string {
 
 export default function EmployeesScreen() {
   const router = useRouter();
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
-  const loadEmployees = useCallback(() => {
-    setLoading(true);
-    setError('');
-    api.getEmployees()
-      .then((data) => {
-        setEmployees(data);
-      })
-      .catch(() => setError('Could not load employees.'))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: employees = [], isLoading, error } = useQuery<Employee[]>({
+    queryKey: ['employees'],
+    queryFn: () => api.getEmployees(),
+  });
 
-  // Re-fetch every time this tab comes into focus (e.g. after a BambooHR sync)
-  useFocusEffect(loadEmployees);
+  // Refetch when tab comes into focus
+  useFocusEffect(useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['employees'] });
+  }, [queryClient]));
 
   const filtered = employees.filter((e) =>
     e.displayName.toLowerCase().includes(search.toLowerCase()) ||
     (e.department ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.container}>
         <LinearGradient
@@ -91,7 +86,7 @@ export default function EmployeesScreen() {
   if (error) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorText}>{error.message || 'Could not load employees.'}</Text>
       </View>
     );
   }
