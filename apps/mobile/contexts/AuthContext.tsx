@@ -52,8 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function hydrateSession() {
     const session = await getStoredSession();
     if (!session) { setAuthState({ status: 'unauthenticated' }); return; }
-    let hasPlate = false;
-    try { const me = await api.me(); hasPlate = me.hasPlate; } catch {}
+    let hasPlate = true;
+    try { const me = await api.me(); hasPlate = me.hasPlate; } catch {
+      // Server unreachable — assume plate exists so we don't force onboarding
+      console.warn('[hydrateSession] /api/me failed, assuming hasPlate=true');
+    }
     setAuthState({ status: 'authenticated', user: session.user, accessToken: session.accessToken, hasPlate });
   }
 
