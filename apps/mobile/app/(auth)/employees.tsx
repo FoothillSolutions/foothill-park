@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Alert, TextInput, ActivityIndicator, Platform,
+  Alert, TextInput, Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { api } from '../../services/api';
 import { theme } from '../../constants/theme';
+import { EmployeeCardSkeleton } from '../../components/Skeleton';
 
 interface Employee {
   id: string;
@@ -59,8 +60,30 @@ export default function EmployeesScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2D6DB5" />
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#2D6DB5', '#5BA4E6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
+          <View style={styles.decorCircle1} />
+          <View style={styles.decorCircle2} />
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.headerEyebrow}>LOADING</Text>
+              <Text style={styles.headerTitle}>People</Text>
+            </View>
+            <View style={styles.headerIconWrapper}>
+              <Ionicons name="people" size={20} color="#FFFFFF" />
+            </View>
+          </View>
+        </LinearGradient>
+        <View style={styles.list}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <EmployeeCardSkeleton key={i} />
+          ))}
+        </View>
       </View>
     );
   }

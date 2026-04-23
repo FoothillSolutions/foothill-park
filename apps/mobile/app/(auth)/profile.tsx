@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { PlateDisplay } from '../../components/PlateDisplay';
+import { Skeleton } from '../../components/Skeleton';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import { isValidPlate, normalizePlate, formatPlate } from '../../utils/plateParser';
@@ -19,6 +20,7 @@ export default function ProfileScreen() {
   const isAdmin = ADMIN_EMAILS.includes((user?.email ?? '').toLowerCase());
 
   const [currentPlate, setCurrentPlate] = useState('');
+  const [plateLoading, setPlateLoading] = useState(true);
   const [newPlate, setNewPlate] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -27,7 +29,7 @@ export default function ProfileScreen() {
     api.getMyPlates().then((plates) => {
       const active = plates.find((p) => p.isActive);
       if (active) setCurrentPlate(active.plateNumber);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setPlateLoading(false));
   }, []);
 
   async function handleSavePlate() {
@@ -282,7 +284,11 @@ export default function ProfileScreen() {
 
             {!editing ? (
               <View style={{ alignItems: 'center', paddingVertical: 4, paddingBottom: 6 }}>
-                <PlateDisplay plate={currentPlate || ''} size="lg" />
+                {plateLoading ? (
+                  <Skeleton width={200} height={52} radius={12} />
+                ) : (
+                  <PlateDisplay plate={currentPlate || ''} size="lg" />
+                )}
               </View>
             ) : (
               <View>
