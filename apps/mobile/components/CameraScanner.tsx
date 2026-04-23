@@ -8,6 +8,7 @@ import { BlurView } from 'expo-blur';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 import { extractPlateFromOcr } from '../utils/ocrParser';
+import { filterGreenChannel } from '../utils/greenFilter';
 
 let TextRecognition: any = null;
 try { TextRecognition = require('@react-native-ml-kit/text-recognition').default; } catch {}
@@ -72,19 +73,126 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
 
       if (!TextRecognition) throw new Error('OCR not available — use a dev build.');
 
-      // Compute frame region in photo pixels (15% margin so we don't clip edges)
+      // Compute frame region in photo pixels.
+      // CameraView uses "cover" content mode: the camera feed is scaled so the
+      // shorter axis fills the container, and the longer axis is center-cropped.
+      // We must replicate that mapping to find where the guide-frame lands in the
+      // full-resolution photo.
       const photoW = photo.width  ?? containerSize.width;
       const photoH = photo.height ?? containerSize.height;
-      const scaleX = photoW / containerSize.width;
-      const scaleY = photoH / containerSize.height;
-      const margin  = 0.15;
-      const cropX   = Math.max(0, Math.round((frameLeft - frameW * margin) * scaleX));
-      const cropY   = Math.max(0, Math.round((frameTop  - frameH * margin) * scaleY));
-      const cropW   = Math.min(photoW - cropX, Math.round(frameW * (1 + margin * 2) * scaleX));
-      const cropH   = Math.min(photoH - cropY, Math.round(frameH * (1 + margin * 2) * scaleY));
 
-      // Try to crop to the frame region before OCR — fall back to full photo if unavailable
-      let ocrUri = photo.uri;
+      const previewAspect = containerSize.width / containerSize.height;
+      const photoAspect   = photoW / photoH;
+
+      let scale: number;
+      let offsetX = 0;
+      let offsetY = 0;
+
+      if (photoAspect > previewAspect) {
+        // Photo is wider — height fills, width is cropped
+        scale   = photoH / containerSize.height;
+        offsetX = (photoW - containerSize.width * scale) / 2;
+      } else {
+        // Photo is taller — width fills, height is cropped
+        scale   = photoW / containerSize.width;
+        offsetY = (photoH - containerSize.height * scale) / 2;
+      }
+
+      const margin  = 0.15;
+      const cropX   = Math.max(0, Math.round((frameLeft - frameW * margin) * scale + offsetX));
+      const cropY   = Math.max(0, Math.round((frameTop  - frameH * margin) * scale + offsetY));
+      const cropW   = Math.min(photoW - cropX, Math.round(frameW * (1 + margin * 2) * scale));
+      const cropH   = Math.min(photoH - cropY, Math.round(frameH * (1 + margin * 2) * scale));
+
+      const runOcr = async (uri: string, filterToFrame: boolean) => {
+        let greenUri: string | null = null;
+        try { greenUri = await filterGreenChannel(uri); } catch {}
+
+        const ocrResult = await TextRecognition.recognize(greenUri ?? uri);
+
+        const blockFrame = (b: any) => b.frame ?? b.boundingBox;
+        const blockArea  = (b: any) => {
+          const f = blockFrame(b);
+          return f ? (f.width ?? 0) * (f.height ?? 0) : 0;
+        };
+
+        let blocks: any[] = [...ocrResult.blocks];
+
+        if (filterToFrame) {
+          const fLeft   = cropX;
+          const fRight  = cropX + cropW;
+          const fTop    = cropY;
+          const fBottom = cropY + cropH;
+          const filtered = blocks.filter((block: any) => {
+            const f = blockFrame(block);
+            if (!f) return true;
+            const cx = (f.left ?? f.x ?? 0) + (f.width ?? 0) / 2;
+            const cy = (f.top  ?? f.y ?? 0) + (f.height ?? 0) / 2;
+            return cx >= fLeft && cx <= fRight && cy >= fTop && cy <= fBottom;
+          });
+          if (filtered.length > 0) blocks = filtered;
+        }
+
+        // Score each block: large text near the top = plate,
+        // small text near the bottom = manufacturer/dealer noise.
+        const imageH = filterToFrame ? cropH : (photoH || 1);
+        const maxArea = Math.max(...blocks.map(blockArea), 1);
+
+        const scored = blocks.map((b: any) => {
+          const f = blockFrame(b);
+          const area = blockArea(b);
+          const sizeScore = (area / maxArea) * 50;
+
+          // Vertical position: 0 = top of image (best), 1 = bottom (worst)
+          const cy = f ? ((f.top ?? f.y ?? 0) + (f.height ?? 0) / 2) / imageH : 0.5;
+          const posScore = (1 - cy) * 50;
+
+          return { block: b, score: sizeScore + posScore };
+        });
+        scored.sort((a, b) => b.score - a.score);
+
+        const topBlocks = scored.filter(s => s.score >= scored[0].score * 0.5);
+
+        const collectChunks = (list: any[]) => {
+          const chunks: string[] = [];
+          for (const item of list) {
+            const b = item.block ?? item;
+            chunks.push(b.text);
+            if (b.lines) {
+              for (const line of b.lines) chunks.push(line.text);
+            }
+          }
+          return chunks;
+        };
+
+        const topChunks = collectChunks(topBlocks);
+        const topResult = extractPlateFromOcr(topChunks);
+        if (topResult) return topResult;
+
+        const allChunks = collectChunks(scored);
+        const allResult = extractPlateFromOcr(
+          allChunks.length > 0 ? allChunks : ocrResult.blocks.map((b: any) => b.text),
+        );
+        if (allResult) return allResult;
+
+        if (greenUri) {
+          const rawResult = await TextRecognition.recognize(uri);
+          const rawChunks: string[] = [];
+          for (const block of rawResult.blocks) {
+            rawChunks.push(block.text);
+            if (block.lines) {
+              for (const line of block.lines) rawChunks.push(line.text);
+            }
+          }
+          return extractPlateFromOcr(rawChunks);
+        }
+
+        return null;
+      };
+
+      // Strategy: try cropped image first, fall back to full photo
+      let plate: string | null = null;
+
       if (cropW > 10 && cropH > 10) {
         try {
           const cropped = await manipulateAsync(
@@ -92,48 +200,19 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
             [{ crop: { originX: cropX, originY: cropY, width: cropW, height: cropH } }],
             { compress: 1, format: SaveFormat.JPEG },
           );
-          ocrUri = cropped.uri;
-        } catch { /* native module not in this build — use full photo */ }
+          plate = await runOcr(cropped.uri, false);
+        } catch { /* crop unavailable — will try full photo below */ }
       }
 
-      const result = await TextRecognition.recognize(ocrUri);
-
-      // Sort blocks largest-first
-      const blockArea = (b: any) => {
-        const f = b.frame ?? b.boundingBox;
-        return f ? (f.width ?? 0) * (f.height ?? 0) : 0;
-      };
-      const sortedBlocks: any[] = [...result.blocks].sort((a, b) => blockArea(b) - blockArea(a));
-
-      // If we ran on the full photo (crop failed), filter blocks to the frame region
-      const activeBlocks = ocrUri === photo.uri
-        ? (() => {
-            const fLeft   = cropX;
-            const fRight  = cropX + cropW;
-            const fTop    = cropY;
-            const fBottom = cropY + cropH;
-            const filtered = sortedBlocks.filter((block: any) => {
-              const f = block.frame ?? block.boundingBox;
-              if (!f) return true;
-              const cx = (f.left ?? f.x ?? 0) + (f.width ?? 0) / 2;
-              const cy = (f.top  ?? f.y ?? 0) + (f.height ?? 0) / 2;
-              return cx >= fLeft && cx <= fRight && cy >= fTop && cy <= fBottom;
-            });
-            return filtered.length > 0 ? filtered : sortedBlocks;
-          })()
-        : sortedBlocks;
-
-      const textChunks: string[] = [];
-      for (const block of activeBlocks) {
-        textChunks.push(block.text);
-        if (block.lines) {
-          for (const line of block.lines) textChunks.push(line.text);
-        }
+      // Full-photo fallback: if cropped attempt found nothing, try the entire photo
+      if (!plate) {
+        plate = await runOcr(photo.uri, true);
       }
 
-      const plate = extractPlateFromOcr(
-        textChunks.length > 0 ? textChunks : result.blocks.map((b: any) => b.text),
-      );
+      // Last resort: full photo without frame filtering (catch plates outside frame)
+      if (!plate) {
+        plate = await runOcr(photo.uri, false);
+      }
 
       if (plate) {
         onPlateDetected(plate);
