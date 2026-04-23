@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@react-native-ml-kit/text-recognition": "^2.0.0",
+    "@shopify/react-native-skia": "^2.6.2",
     "expo": "~54.0.33",
     "expo-auth-session": "~7.0.10",
     "expo-blur": "~15.0.8",
