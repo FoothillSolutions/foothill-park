@@ -23,23 +23,24 @@ router.get('/my', authenticate, async (req, res) => {
 
 // POST /api/plates/register
 router.post('/register', authenticate, async (req, res) => {
-  const { plateNumber } = req.body;
+  const { plateNumber, targetEmployeeId } = req.body;
   if (!plateNumber || typeof plateNumber !== 'string') {
     res.status(400).json({ error: 'plateNumber is required' });
     return;
   }
 
   try {
-    const employee = await findOrCreateEmployee(
+    const actor = await findOrCreateEmployee(
       req.user!.entraId, req.user!.displayName, req.user!.email
     );
-    const plate = await registerPlate(employee.id, plateNumber);
+    const ownerId = targetEmployeeId ?? actor.id;
+    const plate = await registerPlate(ownerId, plateNumber, 'PS', actor.id);
 
     // Audit log
     await db.query(
       `INSERT INTO audit_logs (actor_id, action, target_plate, metadata)
        VALUES ($1, 'PLATE_REGISTER', $2, $3)`,
-      [employee.id, plate.plateNormalized, JSON.stringify({ plateNumber })]
+      [actor.id, plate.plateNormalized, JSON.stringify({ plateNumber, targetEmployeeId: targetEmployeeId ?? null })]
     );
 
     res.status(201).json(plate);

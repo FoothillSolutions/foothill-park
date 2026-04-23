@@ -15,8 +15,10 @@ function normalizePlate(raw: string): string {
 export async function registerPlate(
   employeeId: string,
   plateNumber: string,
-  countryCode = 'PS'
+  countryCode = 'PS',
+  registeredBy?: string
 ): Promise<Plate> {
+  const actorId = registeredBy ?? employeeId;
   const plateNormalized = normalizePlate(plateNumber);
 
   // ── Merge seed placeholder ───────────────────────────────────────────────
@@ -57,12 +59,12 @@ export async function registerPlate(
 
   const result = await db.query<Plate>(
     `INSERT INTO plates (employee_id, plate_number, plate_normalized, country_code, registered_by)
-     VALUES ($1, $2, $3, $4, $1)
+     VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (plate_normalized, country_code)
      DO UPDATE SET employee_id = $1, is_active = true, updated_at = NOW()
      RETURNING id, plate_number AS "plateNumber", plate_normalized AS "plateNormalized",
                country_code AS "countryCode", is_active AS "isActive"`,
-    [employeeId, plateNumber.toUpperCase(), plateNormalized, countryCode]
+    [employeeId, plateNumber.toUpperCase(), plateNormalized, countryCode, actorId]
   );
   return result.rows[0];
 }
