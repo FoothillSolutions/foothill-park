@@ -66,6 +66,10 @@ export default function AuthLayout() {
           name="admin"
           options={{ href: null }}
         />
+        <Tabs.Screen
+          name="register-plate"
+          options={{ href: null }}
+        />
       </Tabs>
       <GateButton />
     </View>

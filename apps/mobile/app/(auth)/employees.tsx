@@ -6,8 +6,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { api } from '../../services/api';
+import { theme } from '../../constants/theme';
 
 interface Employee {
   id: string;
@@ -15,6 +16,8 @@ interface Employee {
   department: string | null;
   phone: string | null;
   discordId: string | null;
+  discordUsername: string | null;
+  plateNumber: string | null;
 }
 
 function getAvatarColor(name: string): string {
@@ -29,6 +32,7 @@ function getAvatarInitials(name: string): string {
 }
 
 export default function EmployeesScreen() {
+  const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -147,11 +151,19 @@ export default function EmployeesScreen() {
                 <Text style={styles.empName} numberOfLines={1}>
                   {item.displayName}
                 </Text>
-                {item.department ? (
-                  <View style={styles.deptChip}>
-                    <Text style={styles.deptChipText}>{item.department}</Text>
-                  </View>
-                ) : null}
+                <View style={styles.metaRow}>
+                  {item.department ? (
+                    <View style={styles.deptChip}>
+                      <Text style={styles.deptChipText}>{item.department}</Text>
+                    </View>
+                  ) : null}
+                  {item.plateNumber ? (
+                    <View style={styles.plateChip}>
+                      <Ionicons name="car" size={9} color={theme.colors.textSecondary} />
+                      <Text style={styles.plateChipText}>{item.plateNumber}</Text>
+                    </View>
+                  ) : null}
+                </View>
               </View>
 
               {/* Actions column */}
@@ -184,6 +196,23 @@ export default function EmployeesScreen() {
                     <FontAwesome5 name="discord" size={12} color="#FFFFFF" />
                     <Text style={styles.discordButtonText} numberOfLines={1}>
                       Discord
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+                {!item.plateNumber ? (
+                  <TouchableOpacity
+                    style={styles.addPlateButton}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/(auth)/register-plate',
+                        params: { employeeId: item.id, employeeName: item.displayName },
+                      })
+                    }
+                    activeOpacity={0.75}
+                  >
+                    <Ionicons name="add-circle" size={12} color="#FFFFFF" />
+                    <Text style={styles.addPlateButtonText} numberOfLines={1}>
+                      Add Plate
                     </Text>
                   </TouchableOpacity>
                 ) : null}
@@ -360,6 +389,12 @@ const styles = StyleSheet.create({
     color: '#1A1A2E',
     letterSpacing: -0.2,
   },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
   deptChip: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(45,109,181,0.08)',
@@ -371,6 +406,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#2D6DB5',
+  },
+  plateChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(107,122,144,0.1)',
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  plateChipText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7A90',
+    letterSpacing: 0.5,
   },
 
   // Actions
@@ -403,6 +453,21 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   discordButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    maxWidth: 60,
+  },
+  addPlateButton: {
+    backgroundColor: '#2D6DB5',
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  addPlateButtonText: {
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',

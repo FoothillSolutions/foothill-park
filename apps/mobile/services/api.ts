@@ -43,6 +43,7 @@ export interface EmployeeResponse {
   phone: string | null;
   discordId: string | null;
   discordUsername: string | null;
+  plateNumber: string | null;
 }
 
 export interface PlateResponse {
@@ -63,10 +64,10 @@ export const api = {
   getMyPlates: (): Promise<PlateResponse[]> =>
     request('/api/plates/my'),
 
-  registerPlate: (plateNumber: string): Promise<PlateResponse> =>
+  registerPlate: (plateNumber: string, targetEmployeeId?: string): Promise<PlateResponse> =>
     request('/api/plates/register', {
       method: 'POST',
-      body: JSON.stringify({ plateNumber }),
+      body: JSON.stringify({ plateNumber, ...(targetEmployeeId && { targetEmployeeId }) }),
     }),
 
   syncBamboo: (): Promise<{ ok: boolean; result: { inserted: number; updated: number; linked: number; deactivated: number } }> =>
