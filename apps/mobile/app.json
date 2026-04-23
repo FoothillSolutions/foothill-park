@@ -15,21 +15,21 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.foothill-park"
+      "bundleIdentifier": "com.foothilltech.foothillpark",
+      "deploymentTarget": "15.5"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.anonymous.foothillpark"
+      "package": "com.foothilltech.foothillpark"
     },
     "web": {
       "favicon": "./assets/favicon.png"
