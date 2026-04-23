@@ -1,10 +1,7 @@
 import { getStoredSession } from './auth';
 
 function getBaseUrl(): string {
-  if (!__DEV__) return 'https://foothill-park.foothilltech.net';
-  // Physical device: run `adb reverse tcp:3000 tcp:3000` once per session so localhost works.
-  // Emulator: localhost also resolves to the host machine on both platforms.
-  return 'http://localhost:3000';
+  return 'https://foothill-park.foothilltech.net';
 }
 
 async function authHeaders(): Promise<Record<string, string>> {

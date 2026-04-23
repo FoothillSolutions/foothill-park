@@ -166,40 +166,53 @@ export function extractPlateFromOcr(blocks: string[]): string | null {
 
   // ── Pass 4: Join consecutive digit tokens (OCR split the plate) ──────────
   // e.g. OCR returns "3", "5337", "H" as separate tokens
+  // Only attempt this if the total block count is small — we're inside a cropped
+  // plate image so seeing many unrelated tokens means something went wrong.
   const digitTokens = allText.match(/\b\d+\b/g) ?? [];
   const letterTokens = allText.match(/\b[A-HJ-NP-Z]\b/g) ?? [];
 
-  // Try digit-only joins first (Format A)
-  for (let i = 0; i < digitTokens.length; i++) {
-    for (let j = i + 1; j <= Math.min(i + 3, digitTokens.length); j++) {
-      const joined = digitTokens.slice(i, j).join('');
-      if (joined.length >= 7 && joined.length <= 8) return joined;
+  if (digitTokens.length <= 5) {
+    // Try digit-only joins first (Format A)
+    for (let i = 0; i < digitTokens.length; i++) {
+      for (let j = i + 1; j <= Math.min(i + 3, digitTokens.length); j++) {
+        const joined = digitTokens.slice(i, j).join('');
+        if (joined.length >= 7 && joined.length <= 8) return joined;
+      }
     }
-  }
 
-  // Try digit join + trailing letter (Format B)
-  for (let i = 0; i < digitTokens.length; i++) {
-    for (let j = i + 1; j <= Math.min(i + 3, digitTokens.length); j++) {
-      const joined = digitTokens.slice(i, j).join('');
-      if (joined.length >= 5 && joined.length <= 6 && letterTokens.length > 0) {
-        return joined + letterTokens[0];
+    // Try digit join + trailing letter (Format B)
+    for (let i = 0; i < digitTokens.length; i++) {
+      for (let j = i + 1; j <= Math.min(i + 3, digitTokens.length); j++) {
+        const joined = digitTokens.slice(i, j).join('');
+        if (joined.length >= 5 && joined.length <= 6 && letterTokens.length > 0) {
+          return joined + letterTokens[0];
+        }
       }
     }
   }
 
   // ── Pass 5: Partial digit run (5-6 digits) ────────────────────────────────
-  const partial = PA_PARTIAL.exec(allText);
-  if (partial) return partial[0];
+  // Only use as last resort when we have exactly 5-6 clean digits (no extra chars)
+  // Require the entire cleaned text to be just digits to avoid misreads
+  const cleanedJoined = cleaned.join(' ').replace(/\s+/g, ' ').trim().toUpperCase();
+  const onlyDigits = /^\d{5,6}$/.exec(cleanedJoined.replace(/\s/g, ''));
+  if (onlyDigits) return onlyDigits[0];
 
-  // ── Pass 6: Scored fallback for edge cases ────────────────────────────────
+  const partial = PA_PARTIAL.exec(allText);
+  // Only return partial if the remaining text has very few characters (plate is almost all we see)
+  if (partial && allText.replace(/\s+/g, '').replace(/[^A-Z0-9]/g, '').length <= 10) {
+    return partial[0];
+  }
+
+  // ── Pass 6: Scored fallback — high threshold to avoid false positives ─────
   const candidates: { plate: string; score: number }[] = [];
   for (const block of cleaned) {
     const tokens = block.toUpperCase().split(/[\s\n\r,.|:;/\\]+/);
     for (const raw of tokens) {
       const clean = raw.replace(/[^A-Z0-9]/g, '');
-      if (clean.length < 4) continue;
+      if (clean.length < 5) continue;
       const score = plateScore(clean);
-      if (score > 8) candidates.push({ plate: clean, score });
+      if (score > 14) candidates.push({ plate: clean, score }); // raised from 8 → 14
     }
   }
 

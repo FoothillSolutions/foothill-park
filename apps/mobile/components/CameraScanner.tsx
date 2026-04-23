@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { BlurView } from 'expo-blur';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 import { extractPlateFromOcr } from '../utils/ocrParser';
 
@@ -66,43 +67,62 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
     setHint('Reading plate…');
 
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.85, base64: false });
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.92, base64: false });
       if (!photo) throw new Error('No photo captured');
 
       if (!TextRecognition) throw new Error('OCR not available — use a dev build.');
-      const result = await TextRecognition.recognize(photo.uri);
 
-      // Map on-screen frame to photo pixel coordinates
+      // Compute frame region in photo pixels (15% margin so we don't clip edges)
       const photoW = photo.width  ?? containerSize.width;
       const photoH = photo.height ?? containerSize.height;
       const scaleX = photoW / containerSize.width;
       const scaleY = photoH / containerSize.height;
+      const margin  = 0.15;
+      const cropX   = Math.max(0, Math.round((frameLeft - frameW * margin) * scaleX));
+      const cropY   = Math.max(0, Math.round((frameTop  - frameH * margin) * scaleY));
+      const cropW   = Math.min(photoW - cropX, Math.round(frameW * (1 + margin * 2) * scaleX));
+      const cropH   = Math.min(photoH - cropY, Math.round(frameH * (1 + margin * 2) * scaleY));
 
-      const margin = 0.4;
-      const fLeft   = (frameLeft - frameW * margin) * scaleX;
-      const fRight  = (frameLeft + frameW * (1 + margin)) * scaleX;
-      const fTop    = (frameTop  - frameH * margin) * scaleY;
-      const fBottom = (frameTop  + frameH * (1 + margin)) * scaleY;
+      // Try to crop to the frame region before OCR — fall back to full photo if unavailable
+      let ocrUri = photo.uri;
+      if (cropW > 10 && cropH > 10) {
+        try {
+          const cropped = await manipulateAsync(
+            photo.uri,
+            [{ crop: { originX: cropX, originY: cropY, width: cropW, height: cropH } }],
+            { compress: 1, format: SaveFormat.JPEG },
+          );
+          ocrUri = cropped.uri;
+        } catch { /* native module not in this build — use full photo */ }
+      }
 
-      // Sort blocks largest-first — plate digits are much bigger than dealer stickers
+      const result = await TextRecognition.recognize(ocrUri);
+
+      // Sort blocks largest-first
       const blockArea = (b: any) => {
         const f = b.frame ?? b.boundingBox;
         return f ? (f.width ?? 0) * (f.height ?? 0) : 0;
       };
       const sortedBlocks: any[] = [...result.blocks].sort((a, b) => blockArea(b) - blockArea(a));
 
-      // Filter to blocks whose centre falls within the expanded frame
-      const frameBlocks = sortedBlocks.filter((block: any) => {
-        const f = block.frame ?? block.boundingBox;
-        if (!f) return true; // no bbox info — keep it
-        const cx = (f.left ?? f.x ?? 0) + (f.width ?? 0) / 2;
-        const cy = (f.top  ?? f.y ?? 0) + (f.height ?? 0) / 2;
-        return cx >= fLeft && cx <= fRight && cy >= fTop && cy <= fBottom;
-      });
+      // If we ran on the full photo (crop failed), filter blocks to the frame region
+      const activeBlocks = ocrUri === photo.uri
+        ? (() => {
+            const fLeft   = cropX;
+            const fRight  = cropX + cropW;
+            const fTop    = cropY;
+            const fBottom = cropY + cropH;
+            const filtered = sortedBlocks.filter((block: any) => {
+              const f = block.frame ?? block.boundingBox;
+              if (!f) return true;
+              const cx = (f.left ?? f.x ?? 0) + (f.width ?? 0) / 2;
+              const cy = (f.top  ?? f.y ?? 0) + (f.height ?? 0) / 2;
+              return cx >= fLeft && cx <= fRight && cy >= fTop && cy <= fBottom;
+            });
+            return filtered.length > 0 ? filtered : sortedBlocks;
+          })()
+        : sortedBlocks;
 
-      const activeBlocks = frameBlocks.length > 0 ? frameBlocks : sortedBlocks;
-
-      // Build text chunks: large blocks first, then their lines
       const textChunks: string[] = [];
       for (const block of activeBlocks) {
         textChunks.push(block.text);
@@ -111,12 +131,9 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
         }
       }
 
-      // Fallback: all blocks if nothing passed the frame filter
-      const chunks = textChunks.length > 0
-        ? textChunks
-        : result.blocks.map((b: any) => b.text);
-
-      const plate = extractPlateFromOcr(chunks);
+      const plate = extractPlateFromOcr(
+        textChunks.length > 0 ? textChunks : result.blocks.map((b: any) => b.text),
+      );
 
       if (plate) {
         onPlateDetected(plate);
@@ -124,8 +141,8 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
         setHint('No plate found — try again');
         setScanning(false);
       }
-    } catch {
-      setHint('Scan failed — try again');
+    } catch (err: any) {
+      setHint(err?.message ?? 'Scan failed — try again');
       setScanning(false);
     }
   }, [scanning, onPlateDetected, containerSize, frameLeft, frameTop, frameW, frameH]);
