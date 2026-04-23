@@ -77,11 +77,13 @@ function ResultCard({
   plate,
   onReset,
   onRetry,
+  scrollRef,
 }: {
   result: Result;
   plate: string;
   onReset: () => void;
   onRetry: (editedPlate: string) => void;
+  scrollRef: React.RefObject<ScrollView | null>;
 }) {
   const [dmSending, setDmSending] = useState(false);
   const [editedPlate, setEditedPlate] = useState(plate);
@@ -218,6 +220,7 @@ function ResultCard({
                 autoCapitalize="characters"
                 autoCorrect={false}
                 maxLength={12}
+                onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250)}
               />
             </View>
           </View>
@@ -249,6 +252,7 @@ export default function ScanScreen() {
   const [result,     setResult]     = useState<Result | null>(null);
   const [error,      setError]      = useState('');
   const [cameraOpen, setCameraOpen] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   async function handleLookup(rawPlate = plate) {
     if (!isValidPlate(rawPlate)) return;
@@ -314,6 +318,7 @@ export default function ScanScreen() {
       </LinearGradient>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -340,7 +345,7 @@ export default function ScanScreen() {
 
         {/* ── Result ────────────────────────────────────────────────────── */}
         {result && !loading && (
-          <ResultCard result={result} plate={plate} onReset={handleReset} onRetry={(edited) => { setPlate(edited); handleLookup(edited); }} />
+          <ResultCard result={result} plate={plate} onReset={handleReset} scrollRef={scrollRef} onRetry={(edited) => { setPlate(edited); handleLookup(edited); }} />
         )}
 
         {/* ── Default (no result, not loading) ─────────────────────────── */}
