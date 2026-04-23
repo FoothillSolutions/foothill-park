@@ -76,12 +76,15 @@ function ResultCard({
   result,
   plate,
   onReset,
+  onRetry,
 }: {
   result: Result;
   plate: string;
   onReset: () => void;
+  onRetry: (editedPlate: string) => void;
 }) {
   const [dmSending, setDmSending] = useState(false);
+  const [editedPlate, setEditedPlate] = useState(plate);
 
   async function handleDiscordDm(discordUsername: string, displayName: string) {
     Alert.alert(
@@ -201,11 +204,35 @@ function ResultCard({
             <Ionicons name="close" size={28} color={C.error} />
           </View>
           <Text style={styles.notFoundTitle}>No employee found</Text>
-          <Text style={styles.notFoundSub}>The car may belong to a visitor.</Text>
+          <Text style={styles.notFoundSub}>The car may belong to a visitor, or the plate may need a correction.</Text>
+
+          <View style={[
+            styles.editInputWrapper,
+            { backgroundColor: isValidPlate(editedPlate) ? C.primary : C.border },
+          ]}>
+            <View style={styles.editInputInner}>
+              <TextInput
+                style={styles.editPlateInput}
+                value={editedPlate}
+                onChangeText={raw => setEditedPlate(raw.replace(/[^A-Za-z0-9\-\s]/g, '').toUpperCase())}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={12}
+              />
+            </View>
+          </View>
+
+          <Pressable
+            style={[styles.retryBtn, (!isValidPlate(editedPlate) || editedPlate === plate) && styles.retryBtnDisabled]}
+            onPress={() => onRetry(editedPlate)}
+            disabled={!isValidPlate(editedPlate) || editedPlate === plate}
+          >
+            <Ionicons name="search" size={16} color={C.white} />
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </Pressable>
         </View>
       )}
 
-      {/* Bottom reset row */}
       <View style={styles.resetRow}>
         <Pressable onPress={onReset}>
           <Text style={styles.resetText}>Search another plate</Text>
@@ -290,6 +317,7 @@ export default function ScanScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets
       >
         {/* ── Error state ───────────────────────────────────────────────── */}
         {error ? (
@@ -312,7 +340,7 @@ export default function ScanScreen() {
 
         {/* ── Result ────────────────────────────────────────────────────── */}
         {result && !loading && (
-          <ResultCard result={result} plate={plate} onReset={handleReset} />
+          <ResultCard result={result} plate={plate} onReset={handleReset} onRetry={(edited) => { setPlate(edited); handleLookup(edited); }} />
         )}
 
         {/* ── Default (no result, not loading) ─────────────────────────── */}
@@ -782,6 +810,46 @@ const styles = StyleSheet.create({
   notFoundSub: {
     fontSize: 14,
     color: C.textSecondary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  editInputWrapper: {
+    borderRadius: 10,
+    padding: 2,
+    width: '100%',
+    marginBottom: 12,
+  },
+  editInputInner: {
+    backgroundColor: C.white,
+    borderRadius: 8,
+  },
+  editPlateInput: {
+    padding: 12,
+    paddingHorizontal: 14,
+    fontSize: 20,
+    fontWeight: '700',
+    color: C.dark,
+    letterSpacing: 3,
+    textAlign: 'center',
+    fontFamily: Platform.select({ ios: 'Courier New', android: 'monospace' }),
+  },
+  retryBtn: {
+    backgroundColor: C.accent,
+    height: 44,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    width: '100%',
+  },
+  retryBtnDisabled: {
+    opacity: 0.45,
+  },
+  retryBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: C.white,
   },
 
   // ── Reset row ─────────────────────────────────────────────────────────────
