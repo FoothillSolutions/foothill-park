@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, Pressable,
   Alert, KeyboardAvoidingView,
@@ -8,6 +8,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import CameraScanner from '../../components/CameraScanner';
 import { api } from '../../services/api';
 import { isValidPlate, normalizePlate } from '../../utils/plateParser';
@@ -47,6 +48,14 @@ export default function RegisterPlateScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [cameraOpen, setCameraOpen] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      setPlate('');
+      setError('');
+      setCameraOpen(false);
+    }, [])
+  );
 
   async function handleRegister() {
     if (!isValidPlate(plate) || !employeeId) return;
