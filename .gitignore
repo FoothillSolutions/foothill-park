@@ -16,3 +16,4 @@ ios/
 apps/api/dist/
 *.apk
 *.aab
+.claude/
