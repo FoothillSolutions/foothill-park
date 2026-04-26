@@ -19,27 +19,35 @@ export function useGeofence() {
 }
 
 async function setup() {
-  const { status: notifStatus } = await Notifications.requestPermissionsAsync();
-  if (notifStatus !== 'granted') return;
+  try {
+    const { status: notifStatus } = await Notifications.requestPermissionsAsync();
+    if (notifStatus !== 'granted') return;
 
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
 
-  const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
-  if (fgStatus !== 'granted') return;
+    const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+    if (fgStatus !== 'granted') return;
 
-  const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
-  if (bgStatus !== 'granted') return;
+    let bgGranted = false;
+    try {
+      const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+      bgGranted = bgStatus === 'granted';
+    } catch {
+      bgGranted = false;
+    }
+    if (!bgGranted) return;
 
-  const already = await Location.hasStartedGeofencingAsync(GEOFENCE_TASK);
-  if (!already) {
-    await Location.startGeofencingAsync(GEOFENCE_TASK, [GATE_REGION]);
-  }
+    const already = await Location.hasStartedGeofencingAsync(GEOFENCE_TASK);
+    if (!already) {
+      await Location.startGeofencingAsync(GEOFENCE_TASK, [GATE_REGION]);
+    }
+  } catch {}
 }
