@@ -352,26 +352,4 @@ foothill-park/
 
 ---
 
-## 12. Claude Code Workflow
-
-Use Claude Code to build this project incrementally:
-
-**Session 1:** "Initialize an Expo TypeScript project called foothill-park with expo-router. Set up the monorepo with a mobile app and an Express API backend. Create the Foothill brand theme file with colors: primary #2D6DB5, dark #1A1A2E, accent #5BA4E6, white #FFFFFF."
-
-**Session 2:** "Set up MSAL authentication in the React Native app. Register the app with Entra ID. Build a login screen with the Foothill logo and brand colors that acquires an access token and stores it in SecureStore."
-
-**Session 3:** "Build the mandatory plate registration screen. After login, check GET /api/me for hasPlate. If false, show the onboarding screen where the user must enter their plate number before accessing any other feature."
-
-**Session 4:** "Build the Express backend with TypeScript. Add JWT validation middleware for Entra ID tokens. Create /api/health, GET /api/me, and POST /api/plates/register endpoints. Set up the PostgreSQL connection with the initial schema migration."
-
-**Session 5:** "Implement POST /api/plates/lookup — accept a plate number, normalize it, check the user has a registered plate (requirePlate middleware), query the database, log the lookup in audit_logs, and return the owner's display name, phone, and Discord ID."
-
-**Session 6:** "Integrate react-native-vision-camera with ML Kit text recognition. Build a PlateScanner component that runs OCR on camera frames and extracts plate numbers using regex."
-
-**Session 7:** "Build the full scan flow: camera screen → plate confirmation (editable) → API lookup → result screen showing owner name, department, phone with a prominent Call button. Handle loading, errors, and 'not found' states. Use Foothill brand styling throughout."
-
-**Session 8:** "Set up Azure deployment — App Service for the API, PostgreSQL Flexible Server, Key Vault for secrets. Create a GitHub Actions CI/CD pipeline."
-
----
-
 *Foothill Park — Internal planning document for Foothill Technology Solutions. Last updated: April 2026.*
