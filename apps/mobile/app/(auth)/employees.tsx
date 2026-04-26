@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 140,
+    paddingBottom: 24,
   },
 
   // Card
