@@ -1,10 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { Linking } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as Notifications from 'expo-notifications';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { theme } from '../constants/theme';
+import { useGeofence } from '../hooks/useGeofence';
+import { GATE_PHONE } from '../constants/config';
+import '../tasks/geofenceTask';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,6 +49,21 @@ function AuthGate() {
 }
 
 export default function RootLayout() {
+  useGeofence();
+  const notifListener = useRef<Notifications.EventSubscription | null>(null);
+
+  useEffect(() => {
+    notifListener.current = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data;
+        if (data?.callGate) {
+          Linking.openURL(`tel:${GATE_PHONE}`);
+        }
+      }
+    );
+    return () => notifListener.current?.remove();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>

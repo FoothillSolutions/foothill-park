@@ -217,7 +217,7 @@ export default function EmployeesScreen() {
                     </Text>
                   </TouchableOpacity>
                 ) : null}
-                {!item.plateNumber ? (
+                {true ? (
                   <TouchableOpacity
                     style={styles.addPlateButton}
                     onPress={() =>
