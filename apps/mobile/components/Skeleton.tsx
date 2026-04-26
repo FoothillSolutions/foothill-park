@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View, ViewStyle, Platform } from 'react-native';
+import { theme } from '../constants/theme';
 
 interface SkeletonProps {
   width?: number | `${number}%`;
@@ -32,14 +33,14 @@ export function Skeleton({ width = '100%', height = 14, radius = 8, style }: Ske
   return (
     <View
       style={[
-        { width, height, borderRadius: radius, backgroundColor: '#E4ECF7', overflow: 'hidden' },
+        { width, height, borderRadius: radius, backgroundColor: theme.colors.surface, overflow: 'hidden' },
         style,
       ]}
     >
       <Animated.View
         style={{
           flex: 1,
-          backgroundColor: '#D6E4F5',
+          backgroundColor: theme.colors.border,
           opacity,
         }}
       />
@@ -67,16 +68,16 @@ const cardStyles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.white,
     borderRadius: 18,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#D6E4F5',
+    borderColor: theme.colors.border,
     gap: 12,
     ...Platform.select({
       ios: {
-        shadowColor: '#1A1A2E',
+        shadowColor: theme.colors.dark,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.03,
         shadowRadius: 2,

@@ -12,21 +12,7 @@ import { PlateDisplay } from '../../components/PlateDisplay';
 import CameraScanner from '../../components/CameraScanner';
 import { api } from '../../services/api';
 import { isValidPlate, normalizePlate } from '../../utils/plateParser';
-
-// ── Design tokens ────────────────────────────────────────────────────────────
-const C = {
-  primary:       '#2D6DB5',
-  accent:        '#5BA4E6',
-  dark:          '#1A1A2E',
-  white:         '#FFFFFF',
-  discord:       '#5865F2',
-  surface:       '#F5F8FC',
-  border:        '#D6E4F5',
-  textSecondary: '#6B7A90',
-  textTertiary:  '#9AA5B8',
-  error:         '#D9534F',
-  success:       '#28A745',
-} as const;
+import { theme } from '../../constants/theme';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Result =
@@ -143,7 +129,7 @@ function ResultCard({
           <View style={styles.statusDotOuter(result.found)}>
             <View style={styles.statusDotInner(result.found)} />
           </View>
-          <Text style={[styles.statusText, { color: result.found ? C.success : C.error }]}>
+          <Text style={[styles.statusText, { color: result.found ? theme.colors.success : theme.colors.error }]}>
             {result.found ? 'MATCH FOUND' : 'NOT REGISTERED'}
           </Text>
         </View>
@@ -179,7 +165,7 @@ function ResultCard({
               onPress={() => result.owner.phone && Linking.openURL(`tel:${result.owner.phone}`)}
               disabled={!result.owner.phone}
             >
-              <Ionicons name="call" size={18} color={C.white} />
+              <Ionicons name="call" size={18} color={theme.colors.white} />
               <Text style={styles.actionBtnText}>
                 {result.owner.phone ? 'Call' : 'No phone'}
               </Text>
@@ -191,7 +177,7 @@ function ResultCard({
                 onPress={() => handleDiscordDm(result.owner.discordUsername!, result.owner.displayName)}
                 disabled={dmSending}
               >
-                <FontAwesome5 name="discord" size={18} color={C.white} />
+                <FontAwesome5 name="discord" size={18} color={theme.colors.white} />
                 <Text style={styles.actionBtnText}>
                   {dmSending ? 'Sending…' : 'Discord'}
                 </Text>
@@ -203,14 +189,14 @@ function ResultCard({
         /* Not found */
         <View style={styles.notFoundBlock}>
           <View style={styles.notFoundIcon}>
-            <Ionicons name="close" size={28} color={C.error} />
+            <Ionicons name="close" size={28} color={theme.colors.error} />
           </View>
           <Text style={styles.notFoundTitle}>No employee found</Text>
           <Text style={styles.notFoundSub}>The car may belong to a visitor, or the plate may need a correction.</Text>
 
           <View style={[
             styles.editInputWrapper,
-            { backgroundColor: isValidPlate(editedPlate) ? C.primary : C.border },
+            { backgroundColor: isValidPlate(editedPlate) ? theme.colors.primary : theme.colors.border },
           ]}>
             <View style={styles.editInputInner}>
               <TextInput
@@ -230,7 +216,7 @@ function ResultCard({
             onPress={() => onRetry(editedPlate)}
             disabled={!isValidPlate(editedPlate) || editedPlate === plate}
           >
-            <Ionicons name="search" size={16} color={C.white} />
+            <Ionicons name="search" size={16} color={theme.colors.white} />
             <Text style={styles.retryBtnText}>Retry</Text>
           </Pressable>
         </View>
@@ -299,7 +285,7 @@ export default function ScanScreen() {
     >
       {/* Gradient header */}
       <LinearGradient
-        colors={['#2D6DB5', '#5BA4E6']}
+        colors={[theme.colors.primary, theme.colors.accent]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -327,7 +313,7 @@ export default function ScanScreen() {
         {/* ── Error state ───────────────────────────────────────────────── */}
         {error ? (
           <View style={styles.errorCard}>
-            <Ionicons name="alert-circle" size={22} color={C.error} />
+            <Ionicons name="alert-circle" size={22} color={theme.colors.error} />
             <Text style={styles.errorText}>{error}</Text>
             <Pressable onPress={() => setError('')}>
               <Text style={styles.errorDismiss}>Dismiss</Text>
@@ -358,19 +344,19 @@ export default function ScanScreen() {
             >
               <View style={styles.cameraIconTile}>
                 <LinearGradient
-                  colors={['#2D6DB5', '#5BA4E6']}
+                  colors={[theme.colors.primary, theme.colors.accent]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.cameraIconGradient}
                 >
-                  <Ionicons name="camera" size={26} color={C.white} />
+                  <Ionicons name="camera" size={26} color={theme.colors.white} />
                 </LinearGradient>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cameraCardTitle}>Scan with camera</Text>
                 <Text style={styles.cameraCardSub}>Point at the plate — we'll read it</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={C.textTertiary} />
+              <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
             </Pressable>
 
             {/* OR divider */}
@@ -388,7 +374,7 @@ export default function ScanScreen() {
               <View
                 style={[
                   styles.inputWrapper,
-                  { backgroundColor: isValidPlate(plate) ? C.primary : C.border },
+                  { backgroundColor: isValidPlate(plate) ? theme.colors.primary : theme.colors.border },
                 ]}
               >
                 <View style={styles.inputInner}>
@@ -402,7 +388,7 @@ export default function ScanScreen() {
                       setPlate(cleaned);
                     }}
                     placeholder="e.g. 7-0339-96"
-                    placeholderTextColor={C.textTertiary}
+                    placeholderTextColor={theme.colors.textTertiary}
                     autoCapitalize="characters"
                     autoCorrect={false}
                     maxLength={12}
@@ -419,7 +405,7 @@ export default function ScanScreen() {
                 onPress={() => handleLookup()}
                 disabled={!isValidPlate(plate) || loading}
               >
-                <Ionicons name="search" size={18} color={C.white} />
+                <Ionicons name="search" size={18} color={theme.colors.white} />
                 <Text style={styles.lookupBtnText}>Look up owner</Text>
               </Pressable>
             </View>
@@ -437,7 +423,7 @@ export default function ScanScreen() {
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 const cardShadow = {
-  shadowColor: '#1A1A2E',
+  shadowColor: theme.colors.dark,
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.04,
   shadowRadius: 10,
@@ -447,7 +433,7 @@ const cardShadow = {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: C.surface,
+    backgroundColor: theme.colors.surface,
   },
 
   // ── Header ────────────────────────────────────────────────────────────────
@@ -493,7 +479,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 30,
     fontWeight: '700',
-    color: C.white,
+    color: theme.colors.white,
     letterSpacing: -0.5,
     lineHeight: 34,
   },
@@ -520,18 +506,18 @@ const styles = StyleSheet.create({
   errorText: {
     flex: 1,
     fontSize: 13,
-    color: C.error,
+    color: theme.colors.error,
     fontWeight: '500',
   },
   errorDismiss: {
     fontSize: 13,
     fontWeight: '700',
-    color: C.error,
+    color: theme.colors.error,
   },
 
   // ── Loading card ──────────────────────────────────────────────────────────
   loadingCard: {
-    backgroundColor: C.white,
+    backgroundColor: theme.colors.white,
     borderRadius: 24,
     padding: 40,
     ...cardShadow,
@@ -543,22 +529,22 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     borderWidth: 4,
-    borderColor: C.border,
-    borderTopColor: C.primary,
+    borderColor: theme.colors.border,
+    borderTopColor: theme.colors.primary,
   },
   loadingText: {
     fontSize: 16,
     fontWeight: '600',
-    color: C.dark,
+    color: theme.colors.dark,
   },
 
   // ── Camera card ───────────────────────────────────────────────────────────
   cameraCard: {
-    backgroundColor: C.white,
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: theme.colors.border,
     ...cardShadow,
     flexDirection: 'row',
     alignItems: 'center',
@@ -569,7 +555,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    shadowColor: C.primary,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 14,
@@ -585,12 +571,12 @@ const styles = StyleSheet.create({
   cameraCardTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: C.dark,
+    color: theme.colors.dark,
     marginBottom: 2,
   },
   cameraCardSub: {
     fontSize: 13,
-    color: C.textSecondary,
+    color: theme.colors.textSecondary,
   },
 
   // ── Divider ───────────────────────────────────────────────────────────────
@@ -604,30 +590,30 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: C.border,
+    backgroundColor: theme.colors.border,
   },
   dividerLabel: {
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.5,
-    color: C.textTertiary,
+    color: theme.colors.textTertiary,
     textTransform: 'uppercase',
   },
 
   // ── Manual card ───────────────────────────────────────────────────────────
   manualCard: {
-    backgroundColor: C.white,
+    backgroundColor: theme.colors.white,
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: theme.colors.border,
     ...cardShadow,
   },
   inputLabel: {
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.2,
-    color: C.textSecondary,
+    color: theme.colors.textSecondary,
     textTransform: 'uppercase',
     marginBottom: 10,
   },
@@ -637,7 +623,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   inputInner: {
-    backgroundColor: C.white,
+    backgroundColor: theme.colors.white,
     borderRadius: 10,
   },
   plateInput: {
@@ -645,12 +631,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 22,
     fontWeight: '700',
-    color: C.dark,
+    color: theme.colors.dark,
     letterSpacing: 3,
     fontFamily: Platform.select({ ios: 'Courier New', android: 'monospace' }),
   },
   lookupBtn: {
-    backgroundColor: C.accent,
+    backgroundColor: theme.colors.accent,
     height: 52,
     borderRadius: 14,
     flexDirection: 'row',
@@ -664,24 +650,24 @@ const styles = StyleSheet.create({
   lookupBtnText: {
     fontSize: 16,
     fontWeight: '600',
-    color: C.white,
+    color: theme.colors.white,
   },
 
   // ── Tip ──────────────────────────────────────────────────────────────────
   tip: {
     fontSize: 12,
-    color: C.textTertiary,
+    color: theme.colors.textTertiary,
     textAlign: 'center',
     marginTop: 22,
   },
 
   // ── Result card ───────────────────────────────────────────────────────────
   resultCard: {
-    backgroundColor: C.white,
+    backgroundColor: theme.colors.white,
     borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: theme.colors.border,
     shadowColor: 'rgba(30,50,90,1)',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
@@ -693,7 +679,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: C.border,
+    borderBottomColor: theme.colors.border,
     alignItems: 'center',
   },
   statusPill: {
@@ -726,19 +712,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
-    color: C.white,
+    color: theme.colors.white,
     fontSize: 22,
     fontWeight: '700',
   },
   ownerName: {
     fontSize: 20,
     fontWeight: '700',
-    color: C.dark,
+    color: theme.colors.dark,
     letterSpacing: -0.3,
   },
   ownerDept: {
     fontSize: 13,
-    color: C.textSecondary,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
 
@@ -753,8 +739,8 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 52,
     borderRadius: 14,
-    backgroundColor: C.primary,
-    shadowColor: C.primary,
+    backgroundColor: theme.colors.primary,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 14,
@@ -765,7 +751,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   callBtnDisabled: {
-    backgroundColor: C.textTertiary,
+    backgroundColor: theme.colors.textTertiary,
     shadowOpacity: 0,
     elevation: 0,
     opacity: 0.7,
@@ -774,8 +760,8 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 52,
     borderRadius: 14,
-    backgroundColor: C.discord,
-    shadowColor: C.discord,
+    backgroundColor: theme.colors.discord,
+    shadowColor: theme.colors.discord,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 14,
@@ -788,7 +774,7 @@ const styles = StyleSheet.create({
   actionBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: C.white,
+    color: theme.colors.white,
   },
 
   // ── Not found ─────────────────────────────────────────────────────────────
@@ -809,12 +795,12 @@ const styles = StyleSheet.create({
   notFoundTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: C.dark,
+    color: theme.colors.dark,
     marginBottom: 4,
   },
   notFoundSub: {
     fontSize: 14,
-    color: C.textSecondary,
+    color: theme.colors.textSecondary,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -825,7 +811,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   editInputInner: {
-    backgroundColor: C.white,
+    backgroundColor: theme.colors.white,
     borderRadius: 8,
   },
   editPlateInput: {
@@ -833,13 +819,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 20,
     fontWeight: '700',
-    color: C.dark,
+    color: theme.colors.dark,
     letterSpacing: 3,
     textAlign: 'center',
     fontFamily: Platform.select({ ios: 'Courier New', android: 'monospace' }),
   },
   retryBtn: {
-    backgroundColor: C.accent,
+    backgroundColor: theme.colors.accent,
     height: 44,
     borderRadius: 12,
     flexDirection: 'row',
@@ -854,25 +840,24 @@ const styles = StyleSheet.create({
   retryBtnText: {
     fontSize: 15,
     fontWeight: '600',
-    color: C.white,
+    color: theme.colors.white,
   },
 
   // ── Reset row ─────────────────────────────────────────────────────────────
   resetRow: {
     borderTopWidth: 1,
-    borderTopColor: C.border,
+    borderTopColor: theme.colors.border,
     padding: 16,
     paddingHorizontal: 20,
   },
   resetText: {
     fontSize: 15,
     fontWeight: '600',
-    color: C.primary,
+    color: theme.colors.primary,
     textAlign: 'center',
   },
 } as any);
 
-// Inline style factories for status dot (can't use functions in StyleSheet.create)
 (styles as any).statusDotOuter = (found: boolean) => ({
   width: 14,
   height: 14,
@@ -880,6 +865,13 @@ const styles = StyleSheet.create({
   backgroundColor: found ? 'rgba(40,167,69,0.2)' : 'rgba(217,83,79,0.2)',
   alignItems: 'center' as const,
   justifyContent: 'center' as const,
+});
+
+(styles as any).statusDotInner = (found: boolean) => ({
+  width: 6,
+  height: 6,
+  borderRadius: 3,
+  backgroundColor: found ? theme.colors.success : theme.colors.error,
 });
 
 (styles as any).statusDotInner = (found: boolean) => ({

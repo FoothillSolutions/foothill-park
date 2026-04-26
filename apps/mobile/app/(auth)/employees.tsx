@@ -57,7 +57,7 @@ export default function EmployeesScreen() {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={['#2D6DB5', '#5BA4E6']}
+          colors={[theme.colors.primary, theme.colors.accent]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.header}
@@ -70,7 +70,7 @@ export default function EmployeesScreen() {
               <Text style={styles.headerTitle}>People</Text>
             </View>
             <View style={styles.headerIconWrapper}>
-              <Ionicons name="people" size={20} color="#FFFFFF" />
+              <Ionicons name="people" size={20} color={theme.colors.white} />
             </View>
           </View>
         </LinearGradient>
@@ -95,7 +95,7 @@ export default function EmployeesScreen() {
     <View style={styles.container}>
       {/* Gradient header */}
       <LinearGradient
-        colors={['#2D6DB5', '#5BA4E6']}
+        colors={[theme.colors.primary, theme.colors.accent]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -113,7 +113,7 @@ export default function EmployeesScreen() {
             <Text style={styles.headerTitle}>People</Text>
           </View>
           <View style={styles.headerIconWrapper}>
-            <Ionicons name="people" size={20} color="#FFFFFF" />
+            <Ionicons name="people" size={20} color={theme.colors.white} />
           </View>
         </View>
       </LinearGradient>
@@ -121,11 +121,11 @@ export default function EmployeesScreen() {
       {/* Sticky search bar */}
       <View style={styles.searchWrapper}>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color="#9AA5B8" />
+          <Ionicons name="search" size={18} color={theme.colors.textTertiary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search by name or department…"
-            placeholderTextColor="#9AA5B8"
+            placeholderTextColor={theme.colors.textTertiary}
             value={search}
             onChangeText={setSearch}
             autoCorrect={false}
@@ -137,7 +137,7 @@ export default function EmployeesScreen() {
               onPress={() => setSearch('')}
               activeOpacity={0.7}
             >
-              <Ionicons name="close" size={12} color="#FFFFFF" />
+              <Ionicons name="close" size={12} color={theme.colors.white} />
             </TouchableOpacity>
           )}
         </View>
@@ -211,7 +211,7 @@ export default function EmployeesScreen() {
                     }
                     activeOpacity={0.75}
                   >
-                    <FontAwesome5 name="discord" size={12} color="#FFFFFF" />
+                    <FontAwesome5 name="discord" size={12} color={theme.colors.white} />
                     <Text style={styles.discordButtonText} numberOfLines={1}>
                       Discord
                     </Text>
@@ -228,7 +228,7 @@ export default function EmployeesScreen() {
                     }
                     activeOpacity={0.75}
                   >
-                    <Ionicons name="add-circle" size={12} color="#FFFFFF" />
+                    <Ionicons name="add-circle" size={12} color={theme.colors.white} />
                     <Text style={styles.addPlateButtonText} numberOfLines={1}>
                       Add Plate
                     </Text>
@@ -246,17 +246,17 @@ export default function EmployeesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F8FC',
+    backgroundColor: theme.colors.surface,
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F5F8FC',
+    backgroundColor: theme.colors.surface,
   },
   errorText: {
     fontSize: 15,
-    color: '#D9534F',
+    color: theme.colors.error,
   },
 
   // Header
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 30,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: theme.colors.white,
     letterSpacing: -0.5,
   },
   headerIconWrapper: {
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
 
   // Search bar
   searchWrapper: {
-    backgroundColor: '#F5F8FC',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 10,
@@ -327,24 +327,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.white,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#D6E4F5',
+    borderColor: theme.colors.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#1A1A2E',
+    color: theme.colors.textPrimary,
     paddingVertical: 0,
   },
   clearButton: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#D6E4F5',
+    backgroundColor: theme.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -360,16 +360,16 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.white,
     borderRadius: 18,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#D6E4F5',
+    borderColor: theme.colors.border,
     gap: 12,
     ...Platform.select({
       ios: {
-        shadowColor: '#1A1A2E',
+        shadowColor: theme.colors.dark,
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.03,
         shadowRadius: 2,
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 19,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: theme.colors.white,
   },
 
   // Info
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   empName: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1A1A2E',
+    color: theme.colors.textPrimary,
     letterSpacing: -0.2,
   },
   metaRow: {
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
   deptChipText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#2D6DB5',
+    color: theme.colors.primary,
   },
   plateChip: {
     flexDirection: 'row',
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   plateChipText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#6B7A90',
+    color: theme.colors.textSecondary,
     letterSpacing: 0.5,
   },
 
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   callButton: {
-    backgroundColor: '#2D6DB5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -457,12 +457,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   callButtonText: {
-    color: '#FFFFFF',
+    color: theme.colors.white,
     fontSize: 11,
     fontWeight: '700',
   },
   discordButton: {
-    backgroundColor: '#5865F2',
+    backgroundColor: theme.colors.discord,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -471,13 +471,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   discordButtonText: {
-    color: '#FFFFFF',
+    color: theme.colors.white,
     fontSize: 11,
     fontWeight: '700',
     maxWidth: 60,
   },
   addPlateButton: {
-    backgroundColor: '#2D6DB5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -486,14 +486,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   addPlateButtonText: {
-    color: '#FFFFFF',
+    color: theme.colors.white,
     fontSize: 11,
     fontWeight: '700',
     maxWidth: 60,
   },
   noPhone: {
     fontSize: 10,
-    color: '#9AA5B8',
+    color: theme.colors.textTertiary,
   },
 
   // Empty state
@@ -505,10 +505,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#9AA5B8',
+    color: theme.colors.textTertiary,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: '#9AA5B8',
+    color: theme.colors.textTertiary,
   },
 });

@@ -10,6 +10,7 @@ import { api } from '../services/api';
 import { isValidPlate, normalizePlate } from '../utils/plateParser';
 import { useAuth } from '../contexts/AuthContext';
 import { PlateDisplay } from '../components/PlateDisplay';
+import { theme } from '../constants/theme';
 
 export default function OnboardingScreen() {
   const [plate, setPlate] = useState('');
@@ -45,13 +46,12 @@ export default function OnboardingScreen() {
   const isValid = isValidPlate(plate);
   const monoFamily = Platform.select({ ios: 'Courier New', android: 'monospace' });
 
-  // Border color logic
-  const borderColor = error ? '#D9534F' : isValid ? '#2D6DB5' : '#D6E4F5';
-  const wrapperBg = error ? '#D9534F' : isValid ? '#2D6DB5' : '#D6E4F5';
+  const borderColor = error ? theme.colors.error : isValid ? theme.colors.primary : theme.colors.border;
+  const wrapperBg = error ? theme.colors.error : isValid ? theme.colors.primary : theme.colors.border;
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#FFFFFF' }}
+      style={{ flex: 1, backgroundColor: theme.colors.white }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
@@ -61,7 +61,7 @@ export default function OnboardingScreen() {
       >
         {/* ── Gradient header band ── */}
         <LinearGradient
-          colors={['#2D6DB5', '#5BA4E6']}
+          colors={[theme.colors.primary, theme.colors.accent]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{
@@ -72,7 +72,7 @@ export default function OnboardingScreen() {
         >
           {/* Progress pills */}
           <View style={{ flexDirection: 'row', gap: 6, marginBottom: 16 }}>
-            <View style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: '#FFFFFF' }} />
+            <View style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: theme.colors.white }} />
             <View style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)' }} />
           </View>
 
@@ -80,9 +80,10 @@ export default function OnboardingScreen() {
           <Text style={{
             fontSize: 12,
             fontWeight: '700',
-            letterSpacing: 1.5,
-            color: 'rgba(255,255,255,0.8)',
-            marginBottom: 4,
+            letterSpacing: 1.2,
+            color: 'rgba(255,255,255,0.85)',
+            textTransform: 'uppercase',
+            marginBottom: 8,
           }}>
             STEP 1 OF 2
           </Text>
@@ -92,211 +93,148 @@ export default function OnboardingScreen() {
             fontSize: 26,
             fontWeight: '700',
             letterSpacing: -0.5,
-            color: '#FFFFFF',
+            color: theme.colors.white,
             lineHeight: 30,
           }}>
-            {'Register your\nlicence plate'}
+            Register your plate
+          </Text>
+
+          {/* Subtitle */}
+          <Text style={{
+            fontSize: 15,
+            color: 'rgba(255,255,255,0.7)',
+            marginTop: 4,
+          }}>
+            Help teammates find you quickly when they need to reach you about parking.
           </Text>
         </LinearGradient>
 
-        {/* ── Body ── */}
-        <View style={{
-          flex: 1,
-          backgroundColor: '#FFFFFF',
-          paddingTop: 28,
-          paddingHorizontal: 20,
-          paddingBottom: 140,
-        }}>
-          {/* Why card */}
-          <View style={{
-            backgroundColor: '#F5F8FC',
-            borderRadius: 18,
-            padding: 16,
-            flexDirection: 'row',
-            gap: 12,
-            borderWidth: 1,
-            borderColor: '#D6E4F5',
-            marginBottom: 28,
-            alignItems: 'flex-start',
-          }}>
-            {/* Icon tile */}
-            <View style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              backgroundColor: 'rgba(45,109,181,0.08)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <Ionicons name="shield-checkmark" size={20} color="#2D6DB5" />
-            </View>
-
-            {/* Text column */}
-            <View style={{ flex: 1 }}>
-              <Text style={{
-                fontSize: 14,
-                fontWeight: '600',
-                color: '#1A1A2E',
-                marginBottom: 2,
-              }}>
-                Why do we need this?
+        {/* ── Main content ── */}
+        <View style={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 40 }}>
+          {/* Preview */}
+          {isValid && (
+            <View style={{ marginBottom: 32, alignItems: 'center' }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary, marginBottom: 12 }}>
+                PREVIEW
               </Text>
-              <Text style={{
-                fontSize: 13,
-                color: '#6B7A90',
-                lineHeight: 20,
-              }}>
-                Teammates can reach you too when your car is in the way.
-              </Text>
+              <PlateDisplay plate={plate} />
             </View>
-          </View>
+          )}
 
-          {/* PlateDisplay preview */}
-          <View style={{ alignItems: 'center', marginBottom: 24 }}>
-            <PlateDisplay plate={plate || ''} size="lg" />
-          </View>
-
-          {/* Input block */}
+          {/* Input label */}
           <Text style={{
-            fontSize: 12,
-            fontWeight: '700',
-            letterSpacing: 1.2,
-            color: '#6B7A90',
-            textTransform: 'uppercase',
+            fontSize: 13,
+            fontWeight: '600',
+            color: theme.colors.textSecondary,
             marginBottom: 8,
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
           }}>
-            YOUR LICENCE PLATE
+            Licence plate
           </Text>
 
-          {/* Outer wrapper — colored border simulation */}
-          <View style={{
-            borderWidth: 2,
-            borderColor: borderColor,
-            borderRadius: 14,
-            padding: 2,
-            backgroundColor: wrapperBg,
-          }}>
-            {/* Inner white container */}
+          {/* Input wrapper */}
+          <View style={[
+            {
+              borderRadius: 14,
+              padding: 2,
+              backgroundColor: wrapperBg,
+            },
+          ]}>
             <View style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: theme.colors.white,
               borderRadius: 12,
               flexDirection: 'row',
               alignItems: 'center',
             }}>
               <TextInput
-                style={{
-                  flex: 1,
-                  paddingTop: 16,
-                  paddingBottom: 16,
-                  paddingLeft: 16,
-                  paddingRight: 48,
-                  fontSize: 22,
-                  fontWeight: '700',
-                  color: '#1A1A2E',
-                  letterSpacing: 3,
-                  fontFamily: monoFamily,
-                }}
                 value={plate}
                 onChangeText={handleChange}
                 placeholder="e.g. 7-0339-96"
-                placeholderTextColor="#9AA5B8"
+                placeholderTextColor={theme.colors.textTertiary}
                 autoCapitalize="characters"
                 autoCorrect={false}
                 maxLength={12}
-                keyboardType="default"
+                style={{
+                  flex: 1,
+                  paddingVertical: 18,
+                  paddingLeft: 18,
+                  paddingRight: 54,
+                  fontSize: 22,
+                  fontWeight: '700',
+                  color: theme.colors.textPrimary,
+                  letterSpacing: 3,
+                  fontFamily: monoFamily,
+                }}
               />
-
-              {/* Trailing check badge when valid and no error */}
-              {isValid && !error && (
+              {isValid && (
                 <View style={{
                   position: 'absolute',
-                  right: 14,
-                  width: 26,
-                  height: 26,
-                  borderRadius: 13,
-                  backgroundColor: '#28A745',
+                  right: 16,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 14,
+                  backgroundColor: theme.colors.success,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                  <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+                  <Ionicons name="checkmark" size={16} color={theme.colors.white} />
                 </View>
               )}
             </View>
           </View>
 
-          {/* Helper text */}
-          <Text style={{
-            marginTop: 8,
-            fontSize: 13,
-            color: error ? '#D9534F' : isValid ? '#28A745' : '#9AA5B8',
-          }}>
-            {error
-              ? error
-              : isValid
-                ? 'Looks good — ready to register'
-                : 'Letters, numbers, dashes only'}
-          </Text>
-        </View>
-      </ScrollView>
+          {/* Error or success text */}
+          {error ? (
+            <Text style={{ marginTop: 10, fontSize: 13, color: theme.colors.error }}>
+              {error}
+            </Text>
+          ) : isValid ? (
+            <Text style={{ marginTop: 10, fontSize: 13, color: theme.colors.success }}>
+              Looks good — ready to register
+            </Text>
+          ) : null}
 
-      {/* ── Sticky bottom CTA ── */}
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
-        {/* White fade overlay */}
-        <LinearGradient
-          colors={['rgba(255,255,255,0)', '#FFFFFF']}
-          style={{
-            position: 'absolute',
-            top: -40,
-            left: 0,
-            right: 0,
-            height: 40,
-          }}
-          pointerEvents="none"
-        />
-
-        <View style={{ paddingTop: 14, paddingHorizontal: 20, paddingBottom: 34, backgroundColor: '#FFFFFF' }}>
+          {/* CTA */}
           <Pressable
+            style={[
+              {
+                marginTop: 28,
+                backgroundColor: isValid ? theme.colors.primary : theme.colors.border,
+                borderRadius: 16,
+                height: 54,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row',
+                gap: 8,
+              },
+              !isValid && { opacity: 0.5 },
+            ]}
             onPress={handleSubmit}
             disabled={!isValid || loading}
-            style={({ pressed }) => ({
-              backgroundColor: '#2D6DB5',
-              height: 56,
-              borderRadius: 16,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              opacity: (!isValid || loading) ? 0.5 : 1,
-              transform: [{ scale: pressed ? 0.97 : 1 }],
-              shadowColor: '#2D6DB5',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.4,
-              shadowRadius: 20,
-              elevation: 6,
-            })}
           >
             {loading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
+              <ActivityIndicator color={theme.colors.white} size="small" />
             ) : (
               <>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFFFFF' }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.white }}>
                   Register &amp; continue
                 </Text>
-                <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+                <Ionicons name="arrow-forward" size={18} color={theme.colors.white} />
               </>
             )}
           </Pressable>
 
           <Text style={{
             fontSize: 12,
-            color: '#9AA5B8',
+            color: theme.colors.textTertiary,
             textAlign: 'center',
             marginTop: 10,
           }}>
             You can change this any time in your profile
           </Text>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

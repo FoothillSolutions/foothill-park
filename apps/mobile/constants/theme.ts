@@ -2,6 +2,7 @@ export const theme = {
   colors: {
     primary: '#2D6DB5',      // buttons, headers, active states
     primaryDark: '#1F4E82',  // gradient dark-end on login/auth
+    primaryDeep: '#244E86',  // gradient mid-stop on login/auth
     dark: '#1A1A2E',         // text, navigation
     accent: '#5BA4E6',       // highlights, secondary actions
     white: '#FFFFFF',        // backgrounds, card surfaces

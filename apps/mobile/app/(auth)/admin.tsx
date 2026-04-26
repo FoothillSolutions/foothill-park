@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { api } from '../../services/api';
+import { theme } from '../../constants/theme';
 
 export default function AdminScreen() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function AdminScreen() {
     <View style={styles.container}>
       {/* Gradient header */}
       <LinearGradient
-        colors={['#2D6DB5', '#5BA4E6']}
+        colors={[theme.colors.primary, theme.colors.accent]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -41,14 +42,14 @@ export default function AdminScreen() {
 
         <View style={styles.headerRow}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={22} color={theme.colors.white} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.eyebrow}>INTERNAL</Text>
             <Text style={styles.headerTitle}>Admin Panel</Text>
           </View>
           <View style={styles.headerIconWrapper}>
-            <Ionicons name="shield-checkmark" size={20} color="#FFFFFF" />
+            <Ionicons name="shield-checkmark" size={20} color={theme.colors.white} />
           </View>
         </View>
       </LinearGradient>
@@ -64,15 +65,15 @@ export default function AdminScreen() {
           activeOpacity={0.7}
         >
           <View style={styles.iconTile}>
-            <Ionicons name="leaf" size={22} color="#2D6DB5" />
+            <Ionicons name="leaf" size={22} color={theme.colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle}>{syncing ? 'Syncing…' : 'Sync BambooHR'}</Text>
             <Text style={styles.cardSub}>Pull latest employees, phones &amp; departments</Text>
           </View>
           {syncing
-            ? <ActivityIndicator color="#2D6DB5" size="small" />
-            : <Ionicons name="chevron-forward" size={18} color="#9AA5B8" />}
+            ? <ActivityIndicator color={theme.colors.primary} size="small" />
+            : <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />}
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -80,7 +81,7 @@ export default function AdminScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F8FC' },
+  container: { flex: 1, backgroundColor: theme.colors.surface },
 
   header: {
     height: 140,
@@ -116,7 +117,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 30, fontWeight: '700',
-    color: '#FFFFFF', letterSpacing: -0.5,
+    color: theme.colors.white, letterSpacing: -0.5,
   },
   headerIconWrapper: {
     width: 44, height: 44, borderRadius: 22,
@@ -129,15 +130,15 @@ const styles = StyleSheet.create({
 
   sectionLabel: {
     fontSize: 11, fontWeight: '700', letterSpacing: 1.2,
-    color: '#6B7A90', textTransform: 'uppercase', marginBottom: 10,
+    color: theme.colors.textSecondary, textTransform: 'uppercase', marginBottom: 10,
   },
 
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.white,
     borderRadius: 18, padding: 16,
-    borderWidth: 1, borderColor: '#D6E4F5',
+    borderWidth: 1, borderColor: theme.colors.border,
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    shadowColor: '#1A1A2E', shadowOffset: { width: 0, height: 2 },
+    shadowColor: theme.colors.dark, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
   },
   iconTile: {
@@ -145,6 +146,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(45,109,181,0.08)',
     alignItems: 'center', justifyContent: 'center',
   },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', marginBottom: 2 },
-  cardSub:   { fontSize: 12, color: '#6B7A90' },
+  cardTitle: { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 2 },
+  cardSub:   { fontSize: 12, color: theme.colors.textSecondary },
 });

@@ -9,6 +9,7 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 import { extractPlateFromOcr } from '../utils/ocrParser';
 import { filterGreenChannel } from '../utils/greenFilter';
+import { theme } from '../constants/theme';
 
 let TextRecognition: any = null;
 try { TextRecognition = require('@react-native-ml-kit/text-recognition').default; } catch {}
@@ -230,15 +231,15 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
   if (!permission) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#2D6DB5" />
+        <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
   }
 
   if (!permission.granted) {
     return (
-      <View style={[styles.center, { backgroundColor: '#F5F8FC', gap: 20 }]}>
-        <Ionicons name="camera-outline" size={56} color="#2D6DB5" />
+      <View style={[styles.center, { backgroundColor: theme.colors.surface, gap: 20 }]}>
+        <Ionicons name="camera-outline" size={56} color={theme.colors.primary} />
         <Text style={styles.permTitle}>Camera access needed</Text>
         <Text style={styles.permSubtitle}>Allow camera access to scan licence plates</Text>
         <Pressable style={styles.permBtn} onPress={requestPermission}>
@@ -248,9 +249,9 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
     );
   }
 
-  const cornerColor = scanning ? '#28A745' : '#FFFFFF';
+  const cornerColor = scanning ? theme.colors.success : theme.colors.white;
   const cornerShadow = scanning ? {
-    shadowColor: '#28A745', shadowOpacity: 0.7, shadowRadius: 16, elevation: 8,
+    shadowColor: theme.colors.success, shadowOpacity: 0.7, shadowRadius: 16, elevation: 8,
   } : {};
 
   return (
@@ -299,14 +300,14 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
         <Pressable style={styles.closeBtn} onPress={onClose}>
           <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.closeBorder} />
-          <Ionicons name="close" size={22} color="#FFFFFF" />
+          <Ionicons name="close" size={22} color={theme.colors.white} />
         </Pressable>
 
         <View style={styles.statusPill}>
           <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.statusPillBorder} />
           <View style={styles.statusPillInner}>
-            <Ionicons name="sparkles" size={12} color="#5BA4E6" />
+            <Ionicons name="sparkles" size={12} color={theme.colors.accent} />
             <Text style={styles.statusPillText}>OCR on-device</Text>
           </View>
         </View>
@@ -326,13 +327,13 @@ export default function CameraScanner({ onPlateDetected, onClose }: Props) {
       {/* ── Shutter ── */}
       <View style={styles.shutterContainer}>
         <Pressable
-          style={[styles.shutterBtn, { backgroundColor: scanning ? '#28A745' : '#2D6DB5' }]}
+          style={[styles.shutterBtn, { backgroundColor: scanning ? theme.colors.success : theme.colors.primary }]}
           onPress={capture}
           disabled={scanning}
         >
           {scanning
-            ? <ActivityIndicator color="#FFFFFF" size="small" />
-            : <Ionicons name="camera" size={30} color="#FFFFFF" />}
+            ? <ActivityIndicator color={theme.colors.white} size="small" />
+            : <Ionicons name="camera" size={30} color={theme.colors.white} />}
         </Pressable>
       </View>
     </View>
@@ -351,16 +352,16 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   permTitle: {
-    fontSize: 18, fontWeight: '700', color: '#1A1A2E', textAlign: 'center',
+    fontSize: 18, fontWeight: '700', color: theme.colors.textPrimary, textAlign: 'center',
   },
   permSubtitle: {
-    fontSize: 14, color: '#6B7A90', textAlign: 'center',
+    fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center',
   },
   permBtn: {
-    backgroundColor: '#2D6DB5', paddingVertical: 14, paddingHorizontal: 32, borderRadius: 999,
+    backgroundColor: theme.colors.primary, paddingVertical: 14, paddingHorizontal: 32, borderRadius: 999,
   },
   permBtnText: {
-    fontSize: 15, fontWeight: '700', color: '#FFFFFF',
+    fontSize: 15, fontWeight: '700', color: theme.colors.white,
   },
   panel: {
     position: 'absolute',
@@ -378,7 +379,7 @@ const styles = StyleSheet.create({
     right: 6,
     height: 2,
     backgroundColor: 'rgba(40,167,69,0.9)',
-    shadowColor: '#28A745',
+    shadowColor: theme.colors.success,
     shadowOpacity: 0.9,
     shadowRadius: 12,
     elevation: 6,
@@ -413,7 +414,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
   },
   statusPillText: {
-    fontSize: 12, fontWeight: '600', color: '#FFFFFF',
+    fontSize: 12, fontWeight: '600', color: theme.colors.white,
   },
   hintContainer: {
     position: 'absolute',
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
     borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
   },
   hintText: {
-    fontSize: 13, fontWeight: '600', color: '#FFFFFF',
+    fontSize: 13, fontWeight: '600', color: theme.colors.white,
   },
   shutterContainer: {
     position: 'absolute',

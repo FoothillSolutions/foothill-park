@@ -1,6 +1,7 @@
 import { View, TextInput, Text, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatPlate, isValidPlate } from '../utils/plateParser';
+import { theme } from '../constants/theme';
 
 interface Props {
   value: string;
@@ -17,7 +18,7 @@ export function PlateInput({ value, onChange, error }: Props) {
 
   const showValid = value.length > 0 && isValidPlate(value);
 
-  const borderBg = error ? '#D9534F' : showValid ? '#2D6DB5' : '#D6E4F5';
+  const borderBg = error ? theme.colors.error : showValid ? theme.colors.primary : theme.colors.border;
 
   return (
     <View>
@@ -28,7 +29,7 @@ export function PlateInput({ value, onChange, error }: Props) {
             value={value}
             onChangeText={handleChange}
             placeholder="e.g. 7-0339-96"
-            placeholderTextColor="#9AA5B8"
+            placeholderTextColor={theme.colors.textTertiary}
             autoCapitalize="characters"
             autoCorrect={false}
             maxLength={12}
@@ -36,7 +37,7 @@ export function PlateInput({ value, onChange, error }: Props) {
           />
           {showValid && (
             <View style={styles.checkBadge}>
-              <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+              <Ionicons name="checkmark" size={15} color={theme.colors.white} />
             </View>
           )}
         </View>
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   innerWrapper: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.white,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -68,7 +69,7 @@ const styles = StyleSheet.create({
     paddingRight: 48,
     fontSize: 22,
     fontWeight: '700',
-    color: '#1A1A2E',
+    color: theme.colors.textPrimary,
     letterSpacing: 3,
     fontFamily: Platform.select({ ios: 'Courier New', android: 'monospace' }),
   },
@@ -78,18 +79,18 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#28A745',
+    backgroundColor: theme.colors.success,
     alignItems: 'center',
     justifyContent: 'center',
   },
   errorText: {
     marginTop: 8,
     fontSize: 13,
-    color: '#D9534F',
+    color: theme.colors.error,
   },
   validText: {
     marginTop: 8,
     fontSize: 13,
-    color: '#28A745',
+    color: theme.colors.success,
   },
 });

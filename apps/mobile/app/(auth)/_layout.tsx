@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { View, TouchableOpacity, Text, StyleSheet, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GATE_PHONE, GATE_LABEL } from '../../constants/config';
+import { theme } from '../../constants/theme';
 
 function callGate() {
   Linking.openURL(`tel:${GATE_PHONE}`);
@@ -10,7 +11,7 @@ function callGate() {
 function GateButton() {
   return (
     <TouchableOpacity style={styles.gate} onPress={callGate} activeOpacity={0.8}>
-      <Ionicons name="call" size={15} color="#FFFFFF" />
+      <Ionicons name="call" size={15} color={theme.colors.white} />
       <Text style={styles.gateLabel}>{GATE_LABEL}</Text>
     </TouchableOpacity>
   );
@@ -22,11 +23,11 @@ export default function AuthLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: '#2D6DB5',
-          tabBarInactiveTintColor: '#9AA5B8',
+          tabBarActiveTintColor: theme.colors.primary,
+          tabBarInactiveTintColor: theme.colors.textTertiary,
           tabBarStyle: {
             backgroundColor: 'rgba(255,255,255,0.95)',
-            borderTopColor: '#D6E4F5',
+            borderTopColor: theme.colors.border,
             borderTopWidth: 1,
             paddingBottom: 28,
             paddingTop: 8,
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 104,
     right: 16,
-    backgroundColor: '#2D6DB5',
+    backgroundColor: theme.colors.primary,
     borderRadius: 999,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -90,15 +91,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 7,
     borderWidth: 1.5,
-    borderColor: '#5BA4E6',
-    shadowColor: '#2D6DB5',
+    borderColor: theme.colors.accent,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 8,
   },
   gateLabel: {
-    color: '#FFFFFF',
+    color: theme.colors.white,
     fontWeight: '700',
     fontSize: 13,
     letterSpacing: 0.3,

@@ -12,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import { isValidPlate, normalizePlate, formatPlate } from '../../utils/plateParser';
 import { ADMIN_EMAILS } from '../../constants/config';
+import { theme } from '../../constants/theme';
 
 export default function ProfileScreen() {
   const { authState, signOut, setHasPlate } = useAuth();
@@ -72,14 +73,14 @@ export default function ProfileScreen() {
     .join('');
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F5F8FC' }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.surface }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
         {/* Gradient header */}
         <LinearGradient
-          colors={['#2D6DB5', '#5BA4E6']}
+          colors={[theme.colors.primary, theme.colors.accent]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{
@@ -130,7 +131,7 @@ export default function ProfileScreen() {
             style={{
               fontSize: 30,
               fontWeight: '700',
-              color: '#FFFFFF',
+              color: theme.colors.white,
               letterSpacing: -0.5,
             }}
           >
@@ -144,7 +145,7 @@ export default function ProfileScreen() {
           {/* 1. Identity card */}
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: theme.colors.white,
               borderRadius: 22,
               padding: 22,
               shadowColor: 'rgba(30,50,90,1)',
@@ -153,7 +154,7 @@ export default function ProfileScreen() {
               shadowOffset: { width: 0, height: 10 },
               elevation: 6,
               borderWidth: 1,
-              borderColor: '#D6E4F5',
+              borderColor: theme.colors.border,
               alignItems: 'center',
               marginBottom: 16,
             }}
@@ -169,7 +170,7 @@ export default function ProfileScreen() {
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontSize: 31, fontWeight: '700', color: '#FFFFFF' }}>
+              <Text style={{ fontSize: 31, fontWeight: '700', color: theme.colors.white }}>
                 {initials || '?'}
               </Text>
             </View>
@@ -178,14 +179,14 @@ export default function ProfileScreen() {
               style={{
                 fontSize: 20,
                 fontWeight: '700',
-                color: '#1A1A2E',
+                color: theme.colors.textPrimary,
                 marginTop: 12,
                 letterSpacing: -0.3,
               }}
             >
               {displayName}
             </Text>
-            <Text style={{ fontSize: 13, color: '#6B7A90', marginTop: 3 }}>
+            <Text style={{ fontSize: 13, color: theme.colors.textSecondary, marginTop: 3 }}>
               {user?.email}
             </Text>
 
@@ -207,14 +208,14 @@ export default function ProfileScreen() {
                   width: 6,
                   height: 6,
                   borderRadius: 3,
-                  backgroundColor: '#28A745',
+                  backgroundColor: theme.colors.success,
                 }}
               />
               <Text
                 style={{
                   fontSize: 11,
                   fontWeight: '700',
-                  color: '#28A745',
+                  color: theme.colors.success,
                   letterSpacing: 0.4,
                   textTransform: 'uppercase',
                 }}
@@ -227,11 +228,11 @@ export default function ProfileScreen() {
           {/* 2. Plate card */}
           <View
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: theme.colors.white,
               borderRadius: 22,
               padding: 20,
               borderWidth: 1,
-              borderColor: '#D6E4F5',
+              borderColor: theme.colors.border,
               shadowColor: '#000',
               shadowOpacity: 0.03,
               shadowRadius: 6,
@@ -254,7 +255,7 @@ export default function ProfileScreen() {
                   fontSize: 11,
                   fontWeight: '700',
                   letterSpacing: 1.2,
-                  color: '#6B7A90',
+                  color: theme.colors.textSecondary,
                   textTransform: 'uppercase',
                 }}
               >
@@ -274,8 +275,8 @@ export default function ProfileScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="pencil" size={13} color="#2D6DB5" />
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#2D6DB5' }}>
+                  <Ionicons name="pencil" size={13} color={theme.colors.primary} />
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.primary }}>
                     Change
                   </Text>
                 </TouchableOpacity>
@@ -297,13 +298,13 @@ export default function ProfileScreen() {
                   style={{
                     borderRadius: 12,
                     padding: 2,
-                    backgroundColor: '#2D6DB5',
+                    backgroundColor: theme.colors.primary,
                     marginBottom: 12,
                   }}
                 >
                   <View
                     style={{
-                      backgroundColor: '#FFFFFF',
+                      backgroundColor: theme.colors.white,
                       borderRadius: 10,
                     }}
                   >
@@ -315,7 +316,7 @@ export default function ProfileScreen() {
                         fontWeight: '700',
                         letterSpacing: 3,
                         fontFamily: Platform.select({ ios: 'Courier New', android: 'monospace' }),
-                        color: '#1A1A2E',
+                        color: theme.colors.textPrimary,
                       }}
                       value={newPlate}
                       onChangeText={(text) => {
@@ -325,7 +326,7 @@ export default function ProfileScreen() {
                       autoCapitalize="characters"
                       autoCorrect={false}
                       placeholder="ABC 1234"
-                      placeholderTextColor="#9AA5B8"
+                      placeholderTextColor={theme.colors.textTertiary}
                     />
                   </View>
                 </View>
@@ -337,16 +338,16 @@ export default function ProfileScreen() {
                       flex: 1,
                       height: 46,
                       borderRadius: 12,
-                      backgroundColor: '#FFFFFF',
+                      backgroundColor: theme.colors.white,
                       borderWidth: 1.5,
-                      borderColor: '#D6E4F5',
+                      borderColor: theme.colors.border,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                     onPress={() => { setEditing(false); setNewPlate(''); setPlateError(''); }}
                     activeOpacity={0.7}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#1A1A2E' }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: theme.colors.textPrimary }}>
                       Cancel
                     </Text>
                   </TouchableOpacity>
@@ -356,7 +357,7 @@ export default function ProfileScreen() {
                       flex: 1,
                       height: 46,
                       borderRadius: 12,
-                      backgroundColor: '#2D6DB5',
+                      backgroundColor: theme.colors.primary,
                       alignItems: 'center',
                       justifyContent: 'center',
                       opacity: (!isValidPlate(newPlate) || saving) ? 0.45 : 1,
@@ -366,14 +367,14 @@ export default function ProfileScreen() {
                     activeOpacity={0.7}
                   >
                     {saving
-                      ? <ActivityIndicator color="#FFFFFF" size="small" />
-                      : <Text style={{ fontSize: 14, fontWeight: '600', color: '#FFFFFF' }}>Save</Text>
+                      ? <ActivityIndicator color={theme.colors.white} size="small" />
+                      : <Text style={{ fontSize: 14, fontWeight: '600', color: theme.colors.white }}>Save</Text>
                     }
                   </TouchableOpacity>
                 </View>
 
                 {plateError ? (
-                  <Text style={{ fontSize: 13, color: '#D9534F', marginTop: 6 }}>
+                  <Text style={{ fontSize: 13, color: theme.colors.error, marginTop: 6 }}>
                     {plateError}
                   </Text>
                 ) : null}
@@ -385,12 +386,12 @@ export default function ProfileScreen() {
           {isAdmin && (
             <TouchableOpacity
               style={{
-                backgroundColor: '#FFFFFF',
+                backgroundColor: theme.colors.white,
                 borderRadius: 16,
                 paddingVertical: 14,
                 paddingHorizontal: 16,
                 borderWidth: 1.5,
-                borderColor: '#2D6DB5',
+                borderColor: theme.colors.primary,
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 12,
@@ -404,24 +405,24 @@ export default function ProfileScreen() {
                 backgroundColor: 'rgba(45,109,181,0.08)',
                 alignItems: 'center', justifyContent: 'center',
               }}>
-                <Ionicons name="shield-checkmark" size={18} color="#2D6DB5" />
+                <Ionicons name="shield-checkmark" size={18} color={theme.colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: '#2D6DB5' }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: theme.colors.primary }}>
                   Admin Panel
                 </Text>
-                <Text style={{ fontSize: 12, color: '#6B7A90', marginTop: 2 }}>
+                <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 }}>
                   BambooHR sync &amp; system tools
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#9AA5B8" />
+              <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
             </TouchableOpacity>
           )}
 
           {/* 4. Sign out card */}
           <TouchableOpacity
             style={{
-              backgroundColor: '#FFFFFF',
+              backgroundColor: theme.colors.white,
               borderRadius: 16,
               paddingVertical: 14,
               paddingHorizontal: 16,
@@ -444,19 +445,19 @@ export default function ProfileScreen() {
                 justifyContent: 'center',
               }}
             >
-              <Ionicons name="log-out-outline" size={18} color="#D9534F" />
+              <Ionicons name="log-out-outline" size={18} color={theme.colors.error} />
             </View>
 
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#D9534F' }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: theme.colors.error }}>
                 Sign out
               </Text>
-              <Text style={{ fontSize: 12, color: '#6B7A90', marginTop: 2 }}>
+              <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 }}>
                 You'll need to sign in again
               </Text>
             </View>
 
-            <Ionicons name="chevron-forward" size={18} color="#9AA5B8" />
+            <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
           </TouchableOpacity>
 
           {/* 5. Footer */}
@@ -465,7 +466,7 @@ export default function ProfileScreen() {
               style={{
                 textAlign: 'center',
                 fontSize: 11,
-                color: '#9AA5B8',
+                color: theme.colors.textTertiary,
                 letterSpacing: 0.3,
               }}
             >

@@ -8,6 +8,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { exchangeCodeForTokens, getStoredSession } from '../services/auth';
 import { useAuth } from '../contexts/AuthContext';
+import { theme } from '../constants/theme';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -87,7 +88,7 @@ export default function AuthCallbackScreen() {
 
   return (
     <LinearGradient
-      colors={['#2D6DB5', '#244E86', '#1A1A2E']}
+      colors={[theme.colors.primary, theme.colors.primaryDeep, theme.colors.dark]}
       start={{ x: 0.2, y: 0 }}
       end={{ x: 0.8, y: 1 }}
       style={styles.gradient}
@@ -102,7 +103,7 @@ export default function AuthCallbackScreen() {
         {/* Logo mark */}
         <View style={styles.logoWrap}>
           <BlurView intensity={20} tint="light" style={StyleSheet.absoluteFill} />
-          <Ionicons name="car-sport" size={44} color="#FFFFFF" />
+          <Ionicons name="car-sport" size={44} color={theme.colors.white} />
         </View>
 
         {/* Spinner */}
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
-    shadowColor: '#000000',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 40,
@@ -160,12 +161,12 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 3,
     borderColor: 'rgba(255,255,255,0.15)',
-    borderTopColor: '#FFFFFF',
+    borderTopColor: theme.colors.white,
   },
   title: {
     fontSize: 19,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.white,
   },
   subtitle: {
     fontSize: 13,
