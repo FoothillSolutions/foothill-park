@@ -213,7 +213,7 @@ export default function EmployeesScreen() {
                   >
                     <FontAwesome5 name="discord" size={12} color={theme.colors.white} />
                     <Text style={styles.discordButtonText} numberOfLines={1}>
-                      Discord
+                      Message
                     </Text>
                   </TouchableOpacity>
                 ) : null}

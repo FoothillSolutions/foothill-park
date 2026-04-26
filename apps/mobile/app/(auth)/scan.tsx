@@ -179,7 +179,7 @@ function ResultCard({
               >
                 <FontAwesome5 name="discord" size={18} color={theme.colors.white} />
                 <Text style={styles.actionBtnText}>
-                  {dmSending ? 'Sending…' : 'Discord'}
+                  {dmSending ? 'Sending…' : 'Message'}
                 </Text>
               </Pressable>
             ) : null}
@@ -874,9 +874,3 @@ const styles = StyleSheet.create({
   backgroundColor: found ? theme.colors.success : theme.colors.error,
 });
 
-(styles as any).statusDotInner = (found: boolean) => ({
-  width: 6,
-  height: 6,
-  borderRadius: 3,
-  backgroundColor: found ? C.success : C.error,
-});
